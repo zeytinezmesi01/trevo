@@ -1,0 +1,149 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
+
+export default function OdemePage() {
+  const [apiKey, setApiKey] = useState('')
+  const [secretKey, setSecretKey] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [success, setSuccess] = useState(false)
+  const [aktif, setAktif] = useState(false)
+  const supabase = createClient()
+
+  useEffect(() => {
+    const load = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      const { data } = await supabase.from('profiles').select('*').eq('id', user!.id).single()
+      if (data?.iyzico_api_key) { setApiKey(data.iyzico_api_key); setAktif(true) }
+      if (data?.iyzico_secret_key) setSecretKey(data.iyzico_secret_key)
+    }
+    load()
+  }, [])
+
+  const handleKaydet = async () => {
+    setSaving(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    await supabase.from('profiles').upsert({
+      id: user!.id,
+      iyzico_api_key: apiKey,
+      iyzico_secret_key: secretKey,
+    })
+    setAktif(!!apiKey)
+    setSaving(false)
+    setSuccess(true)
+    setTimeout(() => setSuccess(false), 3000)
+  }
+
+  return (
+    <div>
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-900">Ödeme Sistemi</h1>
+        <p className="text-gray-500 text-sm mt-1">iyzico entegrasyonu ile online ödeme al</p>
+      </div>
+
+      <div className="max-w-2xl space-y-6">
+
+        {/* DURUM */}
+        <div className={`rounded-2xl border p-5 flex items-center gap-4 ${aktif ? 'bg-green-50 border-green-100' : 'bg-yellow-50 border-yellow-100'}`}>
+          <div className="text-2xl">{aktif ? '✅' : '⚠️'}</div>
+          <div>
+            <div className={`text-sm font-semibold ${aktif ? 'text-green-800' : 'text-yellow-800'}`}>
+              {aktif ? 'Ödeme sistemi aktif' : 'Ödeme sistemi pasif'}
+            </div>
+            <div className={`text-xs mt-0.5 ${aktif ? 'text-green-600' : 'text-yellow-600'}`}>
+              {aktif ? 'iyzico API key bağlı, müşterilerden ödeme alabilirsin.' : 'iyzico API key girerek aktif et.'}
+            </div>
+          </div>
+        </div>
+
+        {/* iyzico AYARLARI */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-6">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center text-lg">💳</div>
+            <div>
+              <div className="text-sm font-semibold text-gray-900">iyzico</div>
+              <a href="https://merchant.iyzipay.com" target="_blank" rel="noreferrer" className="text-xs text-indigo-600 hover:underline">
+                merchant.iyzipay.com → API Anahtarları
+              </a>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">API Key</label>
+              <input
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                type="password"
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 font-mono"
+                placeholder="sandbox-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">Secret Key</label>
+              <input
+                value={secretKey}
+                onChange={(e) => setSecretKey(e.target.value)}
+                type="password"
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 font-mono"
+                placeholder="sandbox-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 mt-5">
+            <button
+              onClick={handleKaydet}
+              disabled={saving}
+              className="bg-gray-900 text-white px-6 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-700 transition-colors disabled:opacity-50"
+            >
+              {saving ? 'Kaydediliyor...' : 'Kaydet & Aktif Et'}
+            </button>
+            {success && <span className="text-green-600 text-sm">✓ Kaydedildi</span>}
+          </div>
+        </div>
+
+        {/* NASIL ÇALIŞIR */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-6">
+          <h2 className="text-sm font-semibold text-gray-900 mb-4">Nasıl çalışır?</h2>
+          <ol className="space-y-3">
+            {[
+              'iyzico\'da merchant hesabı aç (iyzipay.com)',
+              'Dashboard → Ayarlar → API Anahtarları\'ndan key\'leri al',
+              'Yukarıya gir ve kaydet',
+              'Hizmet sayfasından müşteriye ödeme linki gönder',
+              'Ödeme geldiğinde otomatik bildirim al',
+            ].map((step, i) => (
+              <li key={i} className="flex items-start gap-3 text-sm text-gray-600">
+                <span className="w-5 h-5 bg-gray-100 rounded-full flex items-center justify-center text-xs font-semibold text-gray-500 flex-shrink-0 mt-0.5">
+                  {i + 1}
+                </span>
+                {step}
+              </li>
+            ))}
+          </ol>
+        </div>
+
+        {/* DİĞER SEÇENEKLER */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-6">
+          <h2 className="text-sm font-semibold text-gray-900 mb-4">Diğer ödeme sağlayıcıları</h2>
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { name: 'PayTR', desc: 'Türkiye\'nin önde gelen ödeme sistemi', status: 'Yakında' },
+              { name: 'Param', desc: 'Kolay entegrasyon, düşük komisyon', status: 'Yakında' },
+            ].map((p) => (
+              <div key={p.name} className="border border-gray-100 rounded-xl p-4 opacity-60">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="text-sm font-medium text-gray-900">{p.name}</div>
+                  <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">{p.status}</span>
+                </div>
+                <div className="text-xs text-gray-400">{p.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
