@@ -1,19 +1,93 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { createClient } from '@/lib/supabase/client'
 
-const mockDosyalar = [
-  { id: 1, name: 'logo-final.ai', size: '2.4 MB', type: 'AI', color: 'bg-orange-500', tarih: '20 May 2026', musteri: 'Ahmet Bey' },
-  { id: 2, name: 'katalog-v3.pdf', size: '8.1 MB', type: 'PDF', color: 'bg-red-500', tarih: '19 May 2026', musteri: 'Zeynep Hanım' },
-  { id: 3, name: 'sosyal-paket.zip', size: '15 MB', type: 'ZIP', color: 'bg-purple-500', tarih: '18 May 2026', musteri: 'Mehmet Bey' },
-]
+type FileItem = {
+  id: string
+  name: string
+  size: string
+  file_type: string
+  url: string
+  created_at: string
+}
 
 export default function DosyalarPage() {
+  const [dosyalar, setDosyalar] = useState<FileItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [uploading, setUploading] = useState(false)
   const [search, setSearch] = useState('')
+  const [copied, setCopied] = useState<string | null>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
+  const supabase = createClient()
 
-  const filtered = mockDosyalar.filter(d =>
-    d.name.toLowerCase().includes(search.toLowerCase()) ||
-    d.musteri.toLowerCase().includes(search.toLowerCase())
+  const fetchDosyalar = async () => {
+    const { data } = await supabase
+      .from('files')
+      .select('*')
+      .order('created_at', { ascending: false })
+    setDosyalar(data || [])
+    setLoading(false)
+  }
+
+  useEffect(() => { fetchDosyalar() }, [])
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+
+    const { data: { user } } = await supabase.auth.getUser()
+    const ext = file.name.split('.').pop()
+    const path = `${user!.id}/${Date.now()}.${ext}`
+
+    const { data: upload, error } = await supabase.storage
+      .from('files')
+      .upload(path, file)
+
+    if (error) {
+      alert('Yükleme hatası: ' + error.message)
+      setUploading(false)
+      return
+    }
+
+    const { data: urlData } = supabase.storage.from('files').getPublicUrl(upload.path)
+
+    const sizeMB = (file.size / 1024 / 1024).toFixed(1)
+    const fileType = ext?.toUpperCase() || 'FILE'
+
+    await supabase.from('files').insert({
+      user_id: user!.id,
+      name: file.name,
+      size: `${sizeMB} MB`,
+      file_type: fileType,
+      url: urlData.publicUrl,
+    })
+
+    setUploading(false)
+    fetchDosyalar()
+  }
+
+  const handleSil = async (id: string) => {
+    await supabase.from('files').delete().eq('id', id)
+    fetchDosyalar()
+  }
+
+  const handleKopyala = (url: string, id: string) => {
+    navigator.clipboard.writeText(url)
+    setCopied(id)
+    setTimeout(() => setCopied(null), 2000)
+  }
+
+  const typeColor: Record<string, string> = {
+    PDF: 'bg-red-500', AI: 'bg-orange-500', ZIP: 'bg-purple-500',
+    PNG: 'bg-blue-500', JPG: 'bg-blue-400', JPEG: 'bg-blue-400',
+    MP4: 'bg-pink-500', DOC: 'bg-blue-600', DOCX: 'bg-blue-600',
+    XLS: 'bg-green-600', XLSX: 'bg-green-600', FILE: 'bg-gray-500',
+  }
+
+  const filtered = dosyalar.filter(d =>
+    d.name.toLowerCase().includes(search.toLowerCase())
   )
 
   return (
@@ -23,65 +97,96 @@ export default function DosyalarPage() {
           <h1 className="text-2xl font-bold text-gray-900">Dosyalar</h1>
           <p className="text-gray-500 text-sm mt-1">Müşterilerine ilettiğin dosyalar</p>
         </div>
-        <button className="bg-gray-900 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-700 transition-colors">
-          + Dosya Yükle
-        </button>
+        <div>
+          <input
+            type="file"
+            ref={fileRef}
+            onChange={handleUpload}
+            className="hidden"
+          />
+          <button
+            onClick={() => fileRef.current?.click()}
+            disabled={uploading}
+            className="bg-gray-900 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-700 transition-colors disabled:opacity-50"
+          >
+            {uploading ? '⏳ Yükleniyor...' : '+ Dosya Yükle'}
+          </button>
+        </div>
       </div>
 
-      {/* SEARCH */}
       <div className="mb-4">
         <input
           type="text"
-          placeholder="Dosya veya müşteri ara..."
+          placeholder="Dosya ara..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full max-w-sm border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
         />
       </div>
 
-      {/* DOSYA LİSTESİ */}
-      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-100">
-            <tr>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Dosya</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Boyut</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Müşteri</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Tarih</th>
-              <th className="px-6 py-3"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {filtered.map((dosya) => (
-              <tr key={dosya.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-9 h-9 ${dosya.color} rounded-lg flex items-center justify-center text-white text-xs font-bold`}>
-                      {dosya.type}
-                    </div>
-                    <span className="text-sm font-medium text-gray-900">{dosya.name}</span>
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-500">{dosya.size}</td>
-                <td className="px-6 py-4 text-sm text-gray-600">{dosya.musteri}</td>
-                <td className="px-6 py-4 text-sm text-gray-400">{dosya.tarih}</td>
-                <td className="px-6 py-4 text-right">
-                  <button className="text-indigo-600 text-sm hover:text-indigo-800 font-medium">
-                    Linki Kopyala
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {filtered.length === 0 && (
-          <div className="text-center py-16">
-            <div className="text-4xl mb-3">📭</div>
-            <p className="text-gray-500 text-sm">Dosya bulunamadı</p>
-          </div>
-        )}
-      </div>
+      {loading ? (
+        <div className="text-center py-16 text-gray-400 text-sm">Yükleniyor...</div>
+      ) : (
+        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+          {filtered.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="text-4xl mb-3">📭</div>
+              <p className="text-gray-500 text-sm">Henüz dosya yok</p>
+              <button
+                onClick={() => fileRef.current?.click()}
+                className="mt-3 text-sm text-indigo-600 hover:underline"
+              >
+                İlk dosyayı yükle
+              </button>
+            </div>
+          ) : (
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-100">
+                <tr>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Dosya</th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Boyut</th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Tarih</th>
+                  <th className="px-6 py-3"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {filtered.map((dosya) => (
+                  <tr key={dosya.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-9 h-9 ${typeColor[dosya.file_type] || 'bg-gray-500'} rounded-lg flex items-center justify-center text-white text-xs font-bold`}>
+                          {dosya.file_type?.slice(0, 3)}
+                        </div>
+                        <span className="text-sm font-medium text-gray-900">{dosya.name}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-500">{dosya.size}</td>
+                    <td className="px-6 py-4 text-sm text-gray-400">
+                      {new Date(dosya.created_at).toLocaleDateString('tr-TR')}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center justify-end gap-3">
+                        <button
+                          onClick={() => handleKopyala(dosya.url, dosya.id)}
+                          className={`text-xs font-medium transition-colors ${copied === dosya.id ? 'text-green-600' : 'text-indigo-600 hover:text-indigo-800'}`}
+                        >
+                          {copied === dosya.id ? '✓ Kopyalandı' : 'Linki Kopyala'}
+                        </button>
+                        <a href={dosya.url} target="_blank" rel="noreferrer" className="text-xs text-gray-400 hover:text-gray-700">
+                          Aç
+                        </a>
+                        <button onClick={() => handleSil(dosya.id)} className="text-xs text-red-400 hover:text-red-600">
+                          Sil
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
     </div>
   )
 }
