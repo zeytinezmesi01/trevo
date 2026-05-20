@@ -36,25 +36,50 @@ export default function DosyalarPage() {
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+
     setUploading(true)
-    setProgress('Yükleniyor...')
+    setProgress('Hazırlanıyor...')
 
-    const formData = new FormData()
-    formData.append('file', file)
+    // 1. Presigned URL al
+    const res = await fetch('/api/upload/presign', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+      }),
+    })
 
-    const res = await fetch('/api/upload', { method: 'POST', body: formData })
-    const data = await res.json()
+    const { signedUrl, error } = await res.json()
 
-    if (!res.ok) {
-      alert('Hata: ' + data.error)
-    } else {
-      setProgress('✓ Yüklendi!')
-      setTimeout(() => setProgress(''), 2000)
-      fetchDosyalar()
+    if (error || !signedUrl) {
+      alert('Hata: ' + error)
+      setUploading(false)
+      setProgress('')
+      return
     }
 
+    // 2. Direkt R2'ye yükle (Vercel bypass)
+    setProgress('Yükleniyor...')
+    const uploadRes = await fetch(signedUrl, {
+      method: 'PUT',
+      body: file,
+      headers: { 'Content-Type': file.type },
+    })
+
+    if (!uploadRes.ok) {
+      alert('R2 yükleme hatası')
+      setUploading(false)
+      setProgress('')
+      return
+    }
+
+    setProgress('✓ Yüklendi!')
+    setTimeout(() => setProgress(''), 2000)
     setUploading(false)
     if (fileRef.current) fileRef.current.value = ''
+    fetchDosyalar()
   }
 
   const handleSil = async (id: string) => {
@@ -87,7 +112,11 @@ export default function DosyalarPage() {
           <p className="text-gray-500 text-sm mt-1">Müşterilerine ilettiğin dosyalar</p>
         </div>
         <div className="flex items-center gap-3">
-          {progress && <span className="text-sm text-green-600">{progress}</span>}
+          {progress && (
+            <span className={`text-sm font-medium ${progress.startsWith('✓') ? 'text-green-600' : 'text-gray-500'}`}>
+              {progress}
+            </span>
+          )}
           <input type="file" ref={fileRef} onChange={handleUpload} className="hidden" />
           <button
             onClick={() => fileRef.current?.click()}
