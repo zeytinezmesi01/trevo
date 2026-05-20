@@ -16,6 +16,7 @@ export default function DosyalarPage() {
   const [dosyalar, setDosyalar] = useState<FileItem[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
+  const [progress, setProgress] = useState('')
   const [search, setSearch] = useState('')
   const [copied, setCopied] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -36,36 +37,24 @@ export default function DosyalarPage() {
     const file = e.target.files?.[0]
     if (!file) return
     setUploading(true)
+    setProgress('Yükleniyor...')
 
-    const { data: { user } } = await supabase.auth.getUser()
-    const ext = file.name.split('.').pop()
-    const path = `${user!.id}/${Date.now()}.${ext}`
+    const formData = new FormData()
+    formData.append('file', file)
 
-    const { data: upload, error } = await supabase.storage
-      .from('files')
-      .upload(path, file)
+    const res = await fetch('/api/upload', { method: 'POST', body: formData })
+    const data = await res.json()
 
-    if (error) {
-      alert('Yükleme hatası: ' + error.message)
-      setUploading(false)
-      return
+    if (!res.ok) {
+      alert('Hata: ' + data.error)
+    } else {
+      setProgress('✓ Yüklendi!')
+      setTimeout(() => setProgress(''), 2000)
+      fetchDosyalar()
     }
 
-    const { data: urlData } = supabase.storage.from('files').getPublicUrl(upload.path)
-
-    const sizeMB = (file.size / 1024 / 1024).toFixed(1)
-    const fileType = ext?.toUpperCase() || 'FILE'
-
-    await supabase.from('files').insert({
-      user_id: user!.id,
-      name: file.name,
-      size: `${sizeMB} MB`,
-      file_type: fileType,
-      url: urlData.publicUrl,
-    })
-
     setUploading(false)
-    fetchDosyalar()
+    if (fileRef.current) fileRef.current.value = ''
   }
 
   const handleSil = async (id: string) => {
@@ -97,13 +86,9 @@ export default function DosyalarPage() {
           <h1 className="text-2xl font-bold text-gray-900">Dosyalar</h1>
           <p className="text-gray-500 text-sm mt-1">Müşterilerine ilettiğin dosyalar</p>
         </div>
-        <div>
-          <input
-            type="file"
-            ref={fileRef}
-            onChange={handleUpload}
-            className="hidden"
-          />
+        <div className="flex items-center gap-3">
+          {progress && <span className="text-sm text-green-600">{progress}</span>}
+          <input type="file" ref={fileRef} onChange={handleUpload} className="hidden" />
           <button
             onClick={() => fileRef.current?.click()}
             disabled={uploading}
@@ -132,10 +117,7 @@ export default function DosyalarPage() {
             <div className="text-center py-16">
               <div className="text-4xl mb-3">📭</div>
               <p className="text-gray-500 text-sm">Henüz dosya yok</p>
-              <button
-                onClick={() => fileRef.current?.click()}
-                className="mt-3 text-sm text-indigo-600 hover:underline"
-              >
+              <button onClick={() => fileRef.current?.click()} className="mt-3 text-sm text-indigo-600 hover:underline">
                 İlk dosyayı yükle
               </button>
             </div>
@@ -172,12 +154,8 @@ export default function DosyalarPage() {
                         >
                           {copied === dosya.id ? '✓ Kopyalandı' : 'Linki Kopyala'}
                         </button>
-                        <a href={dosya.url} target="_blank" rel="noreferrer" className="text-xs text-gray-400 hover:text-gray-700">
-                          Aç
-                        </a>
-                        <button onClick={() => handleSil(dosya.id)} className="text-xs text-red-400 hover:text-red-600">
-                          Sil
-                        </button>
+                        <a href={dosya.url} target="_blank" rel="noreferrer" className="text-xs text-gray-400 hover:text-gray-700">Aç</a>
+                        <button onClick={() => handleSil(dosya.id)} className="text-xs text-red-400 hover:text-red-600">Sil</button>
                       </div>
                     </td>
                   </tr>
