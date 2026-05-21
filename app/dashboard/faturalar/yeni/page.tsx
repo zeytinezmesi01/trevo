@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
@@ -14,19 +14,21 @@ export default function YeniFaturaPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   useEffect(() => {
     const load = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-      const { data: p } = await supabase.from('profiles').select('tenant_id').eq('id', user.id).maybeSingle()
-      if (!p?.tenant_id) return
-      const { data } = await supabase.from('clients').select('id, name, company, email, tax_office, tax_number, address, city').eq('tenant_id', p.tenant_id).order('name')
-      setClients(data || [])
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+        const { data: p } = await supabase.from('profiles').select('tenant_id').eq('id', user.id).maybeSingle()
+        if (!p?.tenant_id) return
+        const { data } = await supabase.from('clients').select('id, name, company, email, tax_office, tax_number, address, city').eq('tenant_id', p.tenant_id).order('name')
+        setClients(data || [])
+      } catch {}
     }
     load()
-  }, [])
+  }, [supabase])
 
   const addItem = () => setItems([...items, { description: '', quantity: 1, unit: 'adet', unit_price: 0, kdv_rate: 20 }])
   const removeItem = (i: number) => setItems(items.filter((_, idx) => idx !== i))
@@ -67,9 +69,13 @@ export default function YeniFaturaPage() {
 
     if (res.ok) {
       router.push('/dashboard/faturalar')
-    } else {
+      return
+    }
+    try {
       const data = await res.json()
       setError(data.error || 'Kayıt hatası')
+    } catch {
+      setError('Sunucu hatası, tekrar deneyin')
     }
     setSaving(false)
   }

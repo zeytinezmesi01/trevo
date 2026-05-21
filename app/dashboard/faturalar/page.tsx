@@ -30,8 +30,10 @@ export default function FaturalarPage() {
   const router = useRouter()
 
   const fetchData = async () => {
-    const res = await fetch('/api/invoices')
-    if (res.ok) setInvoices(await res.json())
+    try {
+      const res = await fetch('/api/invoices')
+      if (res.ok) setInvoices(await res.json())
+    } catch {}
     setLoading(false)
   }
 

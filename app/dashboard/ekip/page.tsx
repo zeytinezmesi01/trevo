@@ -33,12 +33,14 @@ export default function EkipPage() {
   const supabase = useMemo(() => createClient(), [])
 
   const fetchData = async () => {
-    const res = await fetch('/api/tenant/members')
-    if (res.ok) {
-      const json = await res.json()
-      setMembers(json.members || [])
-      setInvitations(json.invitations || [])
-    }
+    try {
+      const res = await fetch('/api/tenant/members')
+      if (res.ok) {
+        const json = await res.json()
+        setMembers(json.members || [])
+        setInvitations(json.invitations || [])
+      }
+    } catch {}
     setLoading(false)
   }
 
@@ -48,20 +50,25 @@ export default function EkipPage() {
     if (!form.email) return
     setSaving(true)
     setMsg('')
-    const res = await fetch('/api/tenant/invite', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
-    })
-    const data = await res.json()
-    if (res.ok) {
-      setForm({ email: '', role: 'member' })
-      setModal(false)
-      setMsg('Davet gönderildi!')
-      setTimeout(() => setMsg(''), 3000)
-      fetchData()
-    } else {
-      setMsg(data.error || 'Hata oluştu')
+    try {
+      const res = await fetch('/api/tenant/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setForm({ email: '', role: 'member' })
+        setModal(false)
+        setMsg('Davet gönderildi!')
+        setTimeout(() => setMsg(''), 3000)
+        fetchData()
+      } else {
+        setMsg(data.error || 'Hata oluştu')
+        setTimeout(() => setMsg(''), 4000)
+      }
+    } catch {
+      setMsg('Sunucu hatası, tekrar deneyin')
       setTimeout(() => setMsg(''), 4000)
     }
     setSaving(false)
