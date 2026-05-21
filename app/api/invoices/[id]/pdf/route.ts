@@ -21,7 +21,12 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   let pdfUrl = inv.pdf_url
   // Regenerate if invoice was updated after PDF generation
   if (!pdfUrl || !inv.pdf_generated_at || new Date(inv.updated_at) > new Date(inv.pdf_generated_at)) {
-    pdfUrl = await generateAndStoreInvoicePDF(id, ctx.tenantId)
+    try {
+      pdfUrl = await generateAndStoreInvoicePDF(id, ctx.tenantId)
+    } catch (e) {
+      console.error('PDF oluşturma hatası:', e)
+      return NextResponse.json({ error: 'PDF oluşturulamadı' }, { status: 500 })
+    }
   }
 
   if (!pdfUrl) return NextResponse.json({ error: 'PDF oluşturulamadı' }, { status: 500 })

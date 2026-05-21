@@ -11,12 +11,16 @@ type Client = {
   created_at: string
 }
 
+const EMPTY_FORM = { name: '', company: '', email: '', phone: '', tax_number: '', tax_office: '', address: '', city: '' }
+const inputCls = 'w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary'
+
 export default function MusterilerPage() {
   const [modal, setModal] = useState(false)
   const [search, setSearch] = useState('')
   const [musteriler, setMusteriler] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
-  const [form, setForm] = useState({ name: '', company: '', email: '' })
+  const [form, setForm] = useState(EMPTY_FORM)
+  const [isCompany, setIsCompany] = useState(false)
   const [saving, setSaving] = useState(false)
   const [copied, setCopied] = useState<string | null>(null)
 
@@ -40,7 +44,8 @@ export default function MusterilerPage() {
         body: JSON.stringify(form),
       })
       if (res.ok) {
-        setForm({ name: '', company: '', email: '' })
+        setForm(EMPTY_FORM)
+        setIsCompany(false)
         setModal(false)
         await fetchMusteriler()
       }
@@ -154,24 +159,58 @@ export default function MusterilerPage() {
 
       {modal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl max-h-[90vh] overflow-y-auto">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Yeni Müşteri</h2>
             <div className="space-y-3">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Ad Soyad *</label>
-                <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Ahmet Yılmaz" />
+                <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputCls} placeholder="Ahmet Yılmaz" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Şirket</label>
-                <input value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Şirket Adı" />
+                <input value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} className={inputCls} placeholder="Şirket Adı" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">E-posta</label>
-                <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="musteri@sirket.com" />
+                <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={inputCls} placeholder="musteri@sirket.com" />
               </div>
+
+              <label className="flex items-center gap-2 pt-1 cursor-pointer select-none">
+                <input type="checkbox" checked={isCompany} onChange={(e) => setIsCompany(e.target.checked)} className="w-4 h-4 accent-primary" />
+                <span className="text-sm font-medium text-gray-700">Firma bilgileri ekle (fatura için)</span>
+              </label>
+
+              {isCompany && (
+                <div className="space-y-3 border-t border-gray-100 pt-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Vergi No / TCKN</label>
+                      <input value={form.tax_number} onChange={(e) => setForm({ ...form, tax_number: e.target.value })} className={inputCls} placeholder="1234567890" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Vergi Dairesi</label>
+                      <input value={form.tax_office} onChange={(e) => setForm({ ...form, tax_office: e.target.value })} className={inputCls} placeholder="Şişli" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Adres</label>
+                    <input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className={inputCls} placeholder="Mahalle, cadde, no" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Şehir</label>
+                      <input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className={inputCls} placeholder="İstanbul" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Telefon</label>
+                      <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={inputCls} placeholder="0555 555 55 55" />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="flex gap-2 mt-4">
-              <button onClick={() => setModal(false)} className="flex-1 bg-gray-100 text-gray-700 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-200 transition-colors">İptal</button>
+              <button onClick={() => { setModal(false); setForm(EMPTY_FORM); setIsCompany(false) }} className="flex-1 bg-gray-100 text-gray-700 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-200 transition-colors">İptal</button>
               <button onClick={handleEkle} disabled={saving} className="flex-1 bg-primary text-white py-2.5 rounded-xl text-sm font-medium hover:bg-primary-hover transition-colors disabled:opacity-50">
                 {saving ? 'Kaydediliyor...' : 'Ekle'}
               </button>

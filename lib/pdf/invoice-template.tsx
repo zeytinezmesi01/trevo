@@ -1,15 +1,23 @@
 import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer'
+import path from 'node:path'
+
+// Gömülü font — Türkçe karakterleri (ş ğ ı İ ç ö ü) tam destekler.
+// Uzaktan font çekmek serverless'ta kırılgan; dosyalar repoya gömülü.
+const FONT_DIR = path.join(process.cwd(), 'lib', 'pdf', 'fonts')
 
 Font.register({
-  family: 'Inter',
+  family: 'DejaVu',
   fonts: [
-    { src: 'https://fonts.gstatic.com/s/inter/v18/UcC73FwrK3iLTcvw.ttf', fontWeight: 400 },
-    { src: 'https://fonts.gstatic.com/s/inter/v18/UcC73FwrK3iLTcvw.ttf', fontWeight: 700 },
+    { src: path.join(FONT_DIR, 'DejaVuSans.ttf'), fontWeight: 400 },
+    { src: path.join(FONT_DIR, 'DejaVuSans-Bold.ttf'), fontWeight: 700 },
   ],
 })
 
+// Türkçe kelimeler tirelenerek bölünmesin
+Font.registerHyphenationCallback((word) => [word])
+
 const styles = StyleSheet.create({
-  page: { padding: 40, fontFamily: 'Inter', fontSize: 10, color: '#111827' },
+  page: { padding: 40, fontFamily: 'DejaVu', fontSize: 10, color: '#111827' },
   header: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 32 },
   brandName: { fontSize: 20, fontWeight: 700, color: '#4f7dff' },
   invoiceTitle: { fontSize: 24, fontWeight: 700, marginBottom: 4 },

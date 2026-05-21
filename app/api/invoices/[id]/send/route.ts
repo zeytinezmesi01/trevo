@@ -14,7 +14,12 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   if (!invoice) return NextResponse.json({ error: 'Bulunamadı' }, { status: 404 })
   if (!invoice.client_email) return NextResponse.json({ error: 'Müşteri e-postası yok' }, { status: 400 })
 
-  const pdfUrl = await generateAndStoreInvoicePDF(id, ctx.tenantId)
+  let pdfUrl: string | null = null
+  try {
+    pdfUrl = await generateAndStoreInvoicePDF(id, ctx.tenantId)
+  } catch (e) {
+    console.error('PDF oluşturma hatası (send):', e)
+  }
   const total = Number(invoice.total).toLocaleString('tr-TR', { minimumFractionDigits: 2 })
 
   if (process.env.RESEND_API_KEY) {
