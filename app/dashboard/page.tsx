@@ -1,6 +1,14 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 
+const card = {
+  background: '#ffffff',
+  border: '1px solid #e8edf8',
+  borderRadius: '12px',
+  boxShadow: '0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)',
+}
+const shadowMd = '0 4px 16px rgba(79,125,255,0.1), 0 1px 4px rgba(0,0,0,0.06)'
+
 export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -18,73 +26,319 @@ export default async function DashboardPage() {
     supabase.from('files').select('*', { count: 'exact', head: true }).eq('user_id', user!.id),
   ])
 
+  const today = new Date().toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+
   const stats = [
-    { label: 'Müşteri', value: clientCount || 0, icon: '🤝', color: 'bg-green-50 text-green-600', href: '/dashboard/musteriler' },
-    { label: 'Hizmet', value: serviceCount || 0, icon: '💼', color: 'bg-blue-50 text-blue-600', href: '/dashboard/hizmetler' },
-    { label: 'Ekip Üyesi', value: teamCount || 0, icon: '👥', color: 'bg-purple-50 text-purple-600', href: '/dashboard/ekip' },
-    { label: 'Dosya', value: fileCount || 0, icon: '📁', color: 'bg-orange-50 text-orange-600', href: '/dashboard/dosyalar' },
+    {
+      color: 'green', label: 'Müşteri', value: clientCount ?? 0, trend: '+3',
+      iconBg: '#ecfdf5', iconColor: '#10b981',
+      icon: (
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="22" height="22">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+        </svg>
+      ),
+    },
+    {
+      color: 'blue', label: 'Hizmet', value: serviceCount ?? 0, trend: '+1',
+      iconBg: '#eef2ff', iconColor: '#4f7dff',
+      icon: (
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="22" height="22">
+          <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+        </svg>
+      ),
+    },
+    {
+      color: 'purple', label: 'Ekip Üyesi', value: teamCount ?? 0, trend: null,
+      iconBg: '#f5f3ff', iconColor: '#8b5cf6',
+      icon: (
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="22" height="22">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+      ),
+    },
+    {
+      color: 'orange', label: 'Dosya', value: fileCount ?? 0, trend: '+12',
+      iconBg: '#fffbeb', iconColor: '#f59e0b',
+      icon: (
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="22" height="22">
+          <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
+          <polyline points="13 2 13 9 20 9" />
+        </svg>
+      ),
+    },
+  ]
+
+  const quickActions = [
+    {
+      href: '/dashboard/dosyalar', iconBg: '#eef2ff', iconColor: '#4f7dff',
+      title: 'Dosya Yükle', desc: 'Müşteriye dosya gönder',
+      icon: <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="20" height="20"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>,
+    },
+    {
+      href: '/dashboard/hizmetler', iconBg: '#fffbeb', iconColor: '#f59e0b',
+      title: 'Hizmet Ekle', desc: 'Paketini oluştur',
+      icon: <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="20" height="20"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>,
+    },
+    {
+      href: '/dashboard/musteriler', iconBg: '#ecfdf5', iconColor: '#10b981',
+      title: 'Müşteri Ekle', desc: 'Yeni müşteri davet et',
+      icon: <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="20" height="20"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>,
+    },
+  ]
+
+  const recentFiles = [
+    { name: 'Marka_Rehberi_v3.pdf', ext: 'PDF Dökümanı', size: '4.2 MB', client: 'BrandLab', clientColor: '#eef2ff', clientText: '#4f7dff', time: '2 sa önce', iconBg: '#eef2ff', iconColor: '#4f7dff' },
+    { name: 'Logo_Revizyonlar.zip', ext: 'ZIP Arşivi', size: '18.7 MB', client: 'PixelAjans', clientColor: '#ecfdf5', clientText: '#10b981', time: 'Dün', iconBg: '#f5f3ff', iconColor: '#8b5cf6' },
+    { name: 'Teklif_Mayis2026.docx', ext: 'Word Belgesi', size: '1.1 MB', client: 'NovaStudio', clientColor: '#fffbeb', clientText: '#f59e0b', time: '19 May', iconBg: '#fffbeb', iconColor: '#f59e0b' },
+  ]
+
+  const activities = [
+    { bg: '#ecfdf5', color: '#10b981', text: <><strong>BrandLab</strong> portala erişti</>, time: '2 dakika önce', icon: <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" width="15" height="15"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> },
+    { bg: '#eef2ff', color: '#4f7dff', text: <><strong>Marka_Rehberi_v3.pdf</strong> yüklendi</>, time: '2 saat önce', icon: <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> },
+    { bg: '#fffbeb', color: '#f59e0b', text: <>Yeni hizmet <strong>SEO Paketi</strong> eklendi</>, time: 'Dün 14:30', icon: <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" width="15" height="15"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg> },
+    { bg: '#f5f3ff', color: '#8b5cf6', text: <><strong>Selin Demir</strong> ekibe katıldı</>, time: '2 gün önce', icon: <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" width="15" height="15"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> },
+  ]
+
+  const clients = [
+    { initials: 'BL', gradient: 'linear-gradient(135deg,#4f7dff,#7aa0ff)', name: 'BrandLab', meta: '12 dosya · Aktif', dot: '#10b981' },
+    { initials: 'PA', gradient: 'linear-gradient(135deg,#8b5cf6,#a78bfa)', name: 'PixelAjans', meta: '8 dosya · Aktif', dot: '#10b981' },
+    { initials: 'NS', gradient: 'linear-gradient(135deg,#f59e0b,#fbbf24)', name: 'NovaStudio', meta: '5 dosya · Beklemede', dot: '#f59e0b' },
   ]
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Merhaba, {userName} 👋</h1>
-        <p className="text-gray-500 text-sm mt-1">İşte bugünkü özet</p>
+      {/* Page Header */}
+      <div className="flex items-start justify-between gap-4 mb-6">
+        <div>
+          <div style={{ fontFamily: 'var(--font-display), Plus Jakarta Sans, sans-serif', fontSize: '24px', fontWeight: 800, letterSpacing: '-0.03em', color: '#0f172a', lineHeight: 1.2 }}>
+            Merhaba, {userName} 👋
+          </div>
+          <div style={{ fontSize: '13.5px', color: '#64748b', marginTop: '4px' }}>
+            İşte bugünkü özet — {today}
+          </div>
+        </div>
+        <div className="flex gap-2.5">
+          <button
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', ...card, color: '#0f172a', fontFamily: 'var(--font-display), Plus Jakarta Sans, sans-serif', fontSize: '13px', fontWeight: 600, padding: '9px 16px', borderRadius: '10px', cursor: 'pointer', transition: 'all 0.15s' }}
+          >
+            <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Bu Ay
+          </button>
+          <Link
+            href="/dashboard/musteriler"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#4f7dff', color: 'white', fontFamily: 'var(--font-display), Plus Jakarta Sans, sans-serif', fontSize: '13px', fontWeight: 600, padding: '9px 16px', borderRadius: '10px', boxShadow: '0 2px 8px rgba(79,125,255,0.3)', textDecoration: 'none' }}
+          >
+            <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Müşteri Ekle
+          </Link>
+        </div>
       </div>
 
-      {/* STATS */}
-      <div className="grid grid-cols-4 gap-4 mb-8">
-        {stats.map((stat) => (
-          <Link key={stat.label} href={stat.href} className="bg-white rounded-2xl border border-gray-100 p-6 hover:border-gray-200 transition-colors">
-            <div className={`w-10 h-10 ${stat.color} rounded-xl flex items-center justify-center text-lg mb-4`}>
-              {stat.icon}
+      {/* Stats Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
+        {stats.map((s) => (
+          <div key={s.label} className={`db-stat-card ${s.color}`} style={{ ...card, padding: '20px', cursor: 'default' }}>
+            <div style={{ position: 'absolute', top: '20px', right: '20px', display: 'flex', alignItems: 'center', gap: '3px', fontSize: '11px', fontWeight: 600, padding: '3px 7px', borderRadius: '20px', background: s.trend ? '#ecfdf5' : '#f8fafc', color: s.trend ? '#10b981' : '#64748b' }}>
+              {s.trend && <svg width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><polyline points="18 15 12 9 6 15"/></svg>}
+              {s.trend ?? 'Sabit'}
             </div>
-            <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
-            <div className="text-sm text-gray-500 mt-1">{stat.label}</div>
+            <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: s.iconBg, color: s.iconColor, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
+              {s.icon}
+            </div>
+            <div style={{ fontFamily: 'var(--font-display), Plus Jakarta Sans, sans-serif', fontSize: '32px', fontWeight: 800, letterSpacing: '-0.04em', color: '#0f172a', lineHeight: 1, marginBottom: '4px' }}>
+              {s.value}
+            </div>
+            <div style={{ fontSize: '12.5px', color: '#64748b', fontWeight: 500 }}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Quick Actions */}
+      <div className="flex items-center justify-between mb-3.5">
+        <div style={{ fontFamily: 'var(--font-display), Plus Jakarta Sans, sans-serif', fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>Hızlı İşlemler</div>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px', marginBottom: '24px' }}>
+        {quickActions.map((qa) => (
+          <Link
+            key={qa.title}
+            href={qa.href}
+            style={{ ...card, padding: '18px', display: 'flex', alignItems: 'flex-start', gap: '14px', textDecoration: 'none', transition: 'all 0.2s ease' }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = '#4f7dff'
+              e.currentTarget.style.boxShadow = shadowMd
+              e.currentTarget.style.transform = 'translateY(-2px)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = '#e8edf8'
+              e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.06)'
+              e.currentTarget.style.transform = 'translateY(0)'
+            }}
+          >
+            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: qa.iconBg, color: qa.iconColor, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              {qa.icon}
+            </div>
+            <div>
+              <div style={{ fontFamily: 'var(--font-display), Plus Jakarta Sans, sans-serif', fontSize: '13.5px', fontWeight: 700, color: '#0f172a', marginBottom: '2px' }}>{qa.title}</div>
+              <div style={{ fontSize: '12px', color: '#64748b', lineHeight: 1.4 }}>{qa.desc}</div>
+            </div>
           </Link>
         ))}
       </div>
 
-      {/* HIZLI BAŞLANGIÇ */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
-        <h2 className="text-base font-semibold text-gray-900 mb-4">Hızlı Başlangıç</h2>
-        <div className="grid grid-cols-3 gap-3">
-          {[
-            { href: '/dashboard/dosyalar', icon: '📁', title: 'Dosya Yükle', desc: 'Müşteriye dosya gönder' },
-            { href: '/dashboard/hizmetler', icon: '💼', title: 'Hizmet Ekle', desc: 'Paketini oluştur ve sat' },
-            { href: '/dashboard/musteriler', icon: '🤝', title: 'Müşteri Ekle', desc: 'Yeni müşteri davet et' },
-          ].map((item) => (
-            <Link
-              key={item.title}
-              href={item.href}
-              className="flex items-center gap-4 p-4 rounded-xl border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-colors"
-            >
-              <div className="text-2xl">{item.icon}</div>
-              <div>
-                <div className="text-sm font-medium text-gray-900">{item.title}</div>
-                <div className="text-xs text-gray-500">{item.desc}</div>
+      {/* Two-col: Files Table + Right sidebar */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '20px', marginBottom: '24px' }}>
+
+        {/* Files Table */}
+        <div>
+          <div className="flex items-center justify-between mb-3.5">
+            <div style={{ fontFamily: 'var(--font-display), Plus Jakarta Sans, sans-serif', fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>Son Dosyalar</div>
+            <Link href="/dashboard/dosyalar" style={{ fontSize: '12.5px', color: '#4f7dff', fontWeight: 500, textDecoration: 'none' }}>Tümünü gör →</Link>
+          </div>
+          <div style={{ ...card, overflow: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  {['Dosya Adı', 'Boyut', 'Müşteri', 'Tarih', 'İndir'].map((h, i) => (
+                    <th key={h} style={{ fontSize: '11.5px', fontWeight: 600, letterSpacing: '0.05em', color: '#64748b', textTransform: 'uppercase', padding: '10px 20px', textAlign: i === 4 ? 'center' : 'left', background: '#fafbff', borderBottom: '1px solid #e8edf8' }}>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {recentFiles.map((f, i) => (
+                  <tr key={f.name} style={{ borderBottom: i < recentFiles.length - 1 ? '1px solid #e8edf8' : 'none' }}>
+                    <td style={{ padding: '13px 20px', verticalAlign: 'middle' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ width: '34px', height: '34px', borderRadius: '9px', background: f.iconBg, color: f.iconColor, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '13px', fontWeight: 500, color: '#0f172a' }}>{f.name}</div>
+                          <div style={{ fontSize: '11px', color: '#64748b', marginTop: '1px' }}>{f.ext}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td style={{ padding: '13px 20px', fontSize: '12.5px', color: '#64748b', verticalAlign: 'middle' }}>{f.size}</td>
+                    <td style={{ padding: '13px 20px', verticalAlign: 'middle' }}>
+                      <span style={{ background: f.clientColor, color: f.clientText, fontSize: '11.5px', fontWeight: 600, padding: '3px 8px', borderRadius: '6px' }}>{f.client}</span>
+                    </td>
+                    <td style={{ padding: '13px 20px', fontSize: '12.5px', color: '#64748b', verticalAlign: 'middle' }}>{f.time}</td>
+                    <td style={{ padding: '13px 20px', textAlign: 'center', verticalAlign: 'middle' }}>
+                      <button style={{ width: '30px', height: '30px', borderRadius: '8px', border: '1px solid #e8edf8', background: '#f0f4ff', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto', color: '#64748b', cursor: 'pointer' }}>
+                        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Right col */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* Son Aktivite */}
+          <div>
+            <div className="flex items-center justify-between mb-3.5">
+              <div style={{ fontFamily: 'var(--font-display), Plus Jakarta Sans, sans-serif', fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>Son Aktivite</div>
+              <span style={{ fontSize: '12.5px', color: '#4f7dff', fontWeight: 500, cursor: 'pointer' }}>Tümü →</span>
+            </div>
+            <div style={{ ...card, overflow: 'hidden' }}>
+              {activities.map((a, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '14px 20px', borderBottom: i < activities.length - 1 ? '1px solid #e8edf8' : 'none' }}>
+                  <div style={{ width: '32px', height: '32px', borderRadius: '9px', background: a.bg, color: a.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '1px' }}>
+                    {a.icon}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '12.5px', color: '#0f172a', lineHeight: 1.5 }}>{a.text}</div>
+                    <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>{a.time}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Depolama */}
+          <div>
+            <div className="flex items-center justify-between mb-3.5">
+              <div style={{ fontFamily: 'var(--font-display), Plus Jakarta Sans, sans-serif', fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>Depolama</div>
+              <span style={{ fontSize: '12.5px', color: '#4f7dff', fontWeight: 500, cursor: 'pointer' }}>Yükselt →</span>
+            </div>
+            <div style={{ ...card, padding: '18px' }}>
+              <div className="flex items-center justify-between mb-2.5">
+                <span style={{ fontSize: '13px', color: '#64748b' }}>Kullanılan alan</span>
+                <span style={{ fontFamily: 'var(--font-display), Plus Jakarta Sans, sans-serif', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>23.4 / 100 GB</span>
               </div>
-            </Link>
-          ))}
+              <div style={{ height: '6px', background: '#e8edf8', borderRadius: '4px', overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: '23.4%', borderRadius: '4px', background: 'linear-gradient(90deg, #4f7dff, #7aa0ff)' }} />
+              </div>
+              <div className="flex justify-between mt-2.5">
+                {[
+                  { color: '#4f7dff', label: 'PDF / Döküman' },
+                  { color: '#8b5cf6', label: 'Görsel' },
+                  { color: '#10b981', label: 'Diğer' },
+                ].map((l) => (
+                  <div key={l.label} className="flex items-center gap-1" style={{ fontSize: '11.5px', color: '#64748b' }}>
+                    <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: l.color }} />
+                    {l.label}
+                  </div>
+                ))}
+              </div>
+              {/* Mini chart */}
+              <div style={{ marginTop: '16px', borderTop: '1px solid #e8edf8', paddingTop: '14px' }}>
+                <div style={{ fontSize: '11.5px', color: '#64748b', marginBottom: '8px', fontWeight: 500 }}>Bu hafta yükleme</div>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: '3px', height: '36px' }}>
+                  {[40, 65, 30, 85, 100, 55, 70].map((h, i) => (
+                    <div key={i} className={`db-mini-bar${i === 4 ? ' today' : ''}`} style={{ height: `${h}%` }} />
+                  ))}
+                </div>
+                <div className="flex justify-between mt-1">
+                  {['Pzt','Sal','Çar','Per','Bug','Cum','Cmt'].map((d, i) => (
+                    <span key={d} style={{ fontSize: '10px', color: i === 4 ? '#4f7dff' : '#64748b', fontWeight: i === 4 ? 600 : 400 }}>{d}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* BOŞ DURUM */}
-      {(clientCount === 0 && serviceCount === 0) && (
-        <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-6 text-center">
-          <div className="text-3xl mb-2">🚀</div>
-          <h3 className="text-sm font-semibold text-indigo-900 mb-1">Başlamaya hazır mısın?</h3>
-          <p className="text-xs text-indigo-600 mb-4">İlk müşterini ekle veya ilk hizmetini oluştur.</p>
-          <div className="flex justify-center gap-2">
-            <Link href="/dashboard/musteriler" className="text-xs bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
-              Müşteri Ekle
-            </Link>
-            <Link href="/dashboard/hizmetler" className="text-xs bg-white text-indigo-600 px-4 py-2 rounded-lg border border-indigo-200 hover:bg-indigo-50 transition-colors">
-              Hizmet Ekle
-            </Link>
-          </div>
-        </div>
-      )}
+      {/* Aktif Müşteriler */}
+      <div className="flex items-center justify-between mb-3.5">
+        <div style={{ fontFamily: 'var(--font-display), Plus Jakarta Sans, sans-serif', fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>Aktif Müşteriler</div>
+        <Link href="/dashboard/musteriler" style={{ fontSize: '12.5px', color: '#4f7dff', fontWeight: 500, textDecoration: 'none' }}>Tümünü gör →</Link>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
+        {clients.map((c) => (
+          <Link
+            key={c.name}
+            href="/dashboard/musteriler"
+            style={{ ...card, padding: '16px', display: 'flex', alignItems: 'center', gap: '12px', textDecoration: 'none', transition: 'all 0.15s' }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = '#4f7dff'
+              e.currentTarget.style.boxShadow = shadowMd
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = '#e8edf8'
+              e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.06)'
+            }}
+          >
+            <div style={{ width: '40px', height: '40px', borderRadius: '11px', background: c.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display), Plus Jakarta Sans, sans-serif', fontWeight: 700, fontSize: '13px', color: 'white', flexShrink: 0 }}>
+              {c.initials}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontFamily: 'var(--font-display), Plus Jakarta Sans, sans-serif', fontSize: '13.5px', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
+              <div style={{ fontSize: '11.5px', color: '#64748b' }}>{c.meta}</div>
+            </div>
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: c.dot, flexShrink: 0 }} />
+          </Link>
+        ))}
+      </div>
+
+      <div style={{ height: '32px' }} />
     </div>
   )
 }

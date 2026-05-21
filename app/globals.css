@@ -280,6 +280,39 @@ body.light .theme-toggle {
 body.light .theme-toggle .knob { background: #f59e0b; transform: translateX(20px); }
 body.light .theme-toggle .icon-moon { opacity: 0; }
 body.light .theme-toggle .icon-sun  { opacity: 1; }
+/* ══════════════════════════════════════
+   DASHBOARD — stat card color bars
+══════════════════════════════════════ */
+.db-stat-card {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+.db-stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  border-radius: 12px 12px 0 0;
+}
+.db-stat-card.green::before  { background: linear-gradient(90deg, #10b981, #34d399); }
+.db-stat-card.blue::before   { background: linear-gradient(90deg, #4f7dff, #7aa0ff); }
+.db-stat-card.purple::before { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
+.db-stat-card.orange::before { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+
+.db-mini-bar {
+  flex: 1;
+  border-radius: 3px 3px 0 0;
+  background: #eef2ff;
+  transition: background 0.15s;
+}
+.db-mini-bar.today { background: #4f7dff; }
+
+/* scrollbar */
+.db-root ::-webkit-scrollbar { width: 4px; }
+.db-root ::-webkit-scrollbar-track { background: transparent; }
+.db-root ::-webkit-scrollbar-thumb { background: #e8edf8; border-radius: 4px; }
+
 body.light .grid-lines {
   background-image:
     linear-gradient(rgba(79,125,255,0.06) 1px, transparent 1px),
