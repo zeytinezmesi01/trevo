@@ -681,24 +681,39 @@ export default function Home() {
             {[
               {
                 title: 'Ürün',
-                links: ['Özellikler', 'Fiyatlandırma', 'Değişiklik Günlüğü', 'Yol Haritası'],
+                links: [
+                  { label: 'Özellikler', href: '/#features' },
+                  { label: 'Fiyatlandırma', href: '/#pricing' },
+                  { label: 'Değişiklik Günlüğü', href: '/changelog' },
+                  { label: 'Yol Haritası', href: '/yol-haritasi' },
+                ],
               },
               {
                 title: 'Şirket',
-                links: ['Hakkımızda', 'Blog', 'Kariyer', 'İletişim'],
+                links: [
+                  { label: 'Hakkımızda', href: '/hakkimizda' },
+                  { label: 'Blog', href: '/blog' },
+                  { label: 'Kariyer', href: '/kariyer' },
+                  { label: 'İletişim', href: '/iletisim' },
+                ],
               },
               {
                 title: 'Yasal',
-                links: ['Gizlilik Politikası', 'Kullanım Şartları', 'KVKK', 'Çerez Politikası'],
+                links: [
+                  { label: 'Gizlilik Politikası', href: '/gizlilik' },
+                  { label: 'Kullanım Şartları', href: '/kullanim' },
+                  { label: 'KVKK', href: '/kvkk' },
+                  { label: 'Çerez Politikası', href: '/cerez' },
+                ],
               },
             ].map((col) => (
               <div key={col.title}>
                 <h4 className="font-display font-semibold text-white text-sm mb-4">{col.title}</h4>
                 <ul className="flex flex-col gap-3">
                   {col.links.map((link) => (
-                    <li key={link}>
-                      <Link href="#" className="text-sm hover:text-white transition-colors" style={{ color: '#8a9ab5' }}>
-                        {link}
+                    <li key={link.href}>
+                      <Link href={link.href} className="text-sm hover:text-white transition-colors" style={{ color: '#8a9ab5' }}>
+                        {link.label}
                       </Link>
                     </li>
                   ))}

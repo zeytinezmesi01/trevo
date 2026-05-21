@@ -1,0 +1,56 @@
+import { NextResponse } from 'next/server'
+import { getTenantContext } from '@/lib/tenant/auth'
+import { getInvoice, updateInvoiceStatus } from '@/lib/invoice/server'
+import { generateAndStoreInvoicePDF } from '@/lib/pdf/generate-invoice'
+import { Resend } from 'resend'
+
+const resend = new Resend(process.env.RESEND_API_KEY)
+const FROM = process.env.RESEND_FROM_EMAIL || 'Trevo <bildirim@trevo.app>'
+
+export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const ctx = await getTenantContext()
+  const { id } = await params
+
+  const invoice = await getInvoice(id, ctx.tenantId)
+  if (!invoice) return NextResponse.json({ error: 'Bulunamadı' }, { status: 404 })
+  if (!invoice.client_email) return NextResponse.json({ error: 'Müşteri e-postası yok' }, { status: 400 })
+
+  // Generate PDF first
+  const pdfUrl = await generateAndStoreInvoicePDF(id, ctx.tenantId)
+
+  const total = Number(invoice.total).toLocaleString('tr-TR', { minimumFractionDigits: 2 })
+
+  await resend.emails.send({
+    from: FROM,
+    to: invoice.client_email as string,
+    subject: `Faturanız: ${invoice.invoice_number} — ${total} ₺`,
+    html: `
+<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f0f4ff;font-family:-apple-system,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f4ff;padding:40px 20px;">
+    <tr><td align="center">
+      <table width="480" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e8edf8;">
+        <tr><td style="background:linear-gradient(135deg,#4f7dff,#6a96ff);padding:24px 32px;text-align:center;">
+          <h1 style="margin:0;color:#ffffff;font-size:20px;">${ctx.tenantName}</h1>
+        </td></tr>
+        <tr><td style="padding:32px;">
+          <h2 style="margin:0 0 8px;color:#0f172a;font-size:18px;">Faturanız Hazır</h2>
+          <p style="margin:0 0 24px;color:#64748b;font-size:14px;">
+            ${invoice.invoice_number} numaralı faturanız ${total} ₺ tutarındadır.
+          </p>
+          ${pdfUrl ? `<a href="${pdfUrl}" style="display:inline-block;background:#4f7dff;color:#fff;text-decoration:none;padding:14px 28px;border-radius:10px;font-size:14px;font-weight:600;">Faturayı Görüntüle</a>` : ''}
+          <p style="margin:24px 0 0;color:#94a3b8;font-size:12px;">Ödeme bilgileriniz fatura üzerinde yer almaktadır.</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`,
+  })
+
+  await updateInvoiceStatus(id, ctx.tenantId, 'sent', {
+    emailed_at: new Date().toISOString(),
+    email_to: invoice.client_email as string,
+  })
+
+  return NextResponse.json({ ok: true })
+}

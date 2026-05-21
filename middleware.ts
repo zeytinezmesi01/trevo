@@ -35,6 +35,30 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
+  // Brand detection via domain (white-label)
+  const host = request.headers.get('host') || ''
+  const domain = host.replace(/:\d+$/, '').replace(/^www\./, '')
+  const isDefaultDomain = ['localhost', 'trevo.app', 'trevo.vercel.app'].some(
+    (d) => domain === d || domain.endsWith(`.${d}`)
+  )
+
+  if (!isDefaultDomain) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('brand_domain', domain)
+      .single()
+
+    if (profile) {
+      supabaseResponse.headers.set('x-brand-profile-id', profile.id as string)
+      supabaseResponse.cookies.set('brand_profile_id', profile.id as string, {
+        httpOnly: false,
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24,
+      })
+    }
+  }
+
   return supabaseResponse
 }
 

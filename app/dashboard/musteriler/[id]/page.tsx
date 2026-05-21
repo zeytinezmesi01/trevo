@@ -1,0 +1,158 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useParams, useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
+
+export default function MusteriDetayPage() {
+  const { id } = useParams<{ id: string }>()
+  const router = useRouter()
+  const [client, setClient] = useState<Record<string, unknown> | null>(null)
+  const [files, setFiles] = useState<Array<Record<string, unknown>>>([])
+  const [invoices, setInvoices] = useState<Array<Record<string, unknown>>>([])
+  const [loading, setLoading] = useState(true)
+  const [editing, setEditing] = useState(false)
+  const [form, setForm] = useState<Record<string, string>>({})
+  const [saving, setSaving] = useState(false)
+  const supabase = createClient()
+
+  useEffect(() => {
+    const load = async () => {
+      const res = await fetch(`/api/tenant/members`).catch(() => null) // get tenant
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data: p } = await supabase.from('profiles').select('tenant_id').eq('id', user.id).maybeSingle()
+      if (!p?.tenant_id) return
+
+      const { data: c } = await supabase.from('clients').select('*').eq('id', id).eq('tenant_id', p.tenant_id).maybeSingle()
+      if (!c) { router.push('/dashboard/musteriler'); return }
+      setClient(c)
+      setForm({ name: c.name || '', company: c.company || '', email: c.email || '', tax_office: c.tax_office || '', tax_number: c.tax_number || '', address: c.address || '', city: c.city || '', phone: c.phone || '' })
+
+      const [{ data: f }, { data: inv }] = await Promise.all([
+        supabase.from('files').select('id, name, size, created_at').eq('client_id', id).order('created_at', { ascending: false }),
+        supabase.from('invoices').select('id, invoice_number, status, total, invoice_date').eq('client_id', id).order('created_at', { ascending: false }),
+      ])
+      setFiles(f || [])
+      setInvoices(inv || [])
+      setLoading(false)
+    }
+    load()
+  }, [id])
+
+  const handleSave = async () => {
+    setSaving(true)
+    await supabase.from('clients').update(form).eq('id', id)
+    setClient({ ...client!, ...form })
+    setEditing(false)
+    setSaving(false)
+  }
+
+  if (loading) return <div style={{ textAlign: 'center', padding: 60, color: '#94a3b8' }}>Yükleniyor...</div>
+  if (!client) return null
+
+  const portalUrl = `${window.location.origin}/portal/${client.token}`
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-2xl font-bold" style={{ color: '#0f172a' }}>{String(client.name)}</h1>
+          {!!client.company && <p className="text-sm mt-1" style={{ color: '#64748b' }}>{String(client.company)}</p>}
+        </div>
+        <button onClick={() => { navigator.clipboard.writeText(portalUrl); alert('Portal linki kopyalandı!') }}
+          className="px-4 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: '#4f7dff' }}>
+          📋 Portal Linkini Kopyala
+        </button>
+      </div>
+
+      <div className="grid grid-cols-2 gap-6 mb-8">
+        {/* Info */}
+        <div className="rounded-2xl border p-6" style={{ background: '#fff', borderColor: '#e8edf8' }}>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold" style={{ fontSize: 15, color: '#0f172a' }}>Bilgiler</h2>
+            <button onClick={() => setEditing(!editing)} className="text-sm font-medium" style={{ color: '#4f7dff' }}>
+              {editing ? 'İptal' : 'Düzenle'}
+            </button>
+          </div>
+
+          {editing ? (
+            <div className="space-y-3">
+              {['name', 'company', 'email', 'phone', 'tax_office', 'tax_number', 'address', 'city'].map(f => (
+                <div key={f}>
+                  <label className="block text-xs font-medium mb-1" style={{ color: '#64748b' }}>{f === 'name' ? 'Ad Soyad' : f === 'company' ? 'Şirket' : f === 'email' ? 'E-posta' : f === 'phone' ? 'Telefon' : f === 'tax_office' ? 'Vergi Dairesi' : f === 'tax_number' ? 'Vergi No' : f === 'address' ? 'Adres' : 'Şehir'}</label>
+                  <input value={form[f] || ''} onChange={e => setForm({ ...form, [f]: e.target.value })}
+                    className="w-full rounded-lg px-3 py-2 text-sm border" style={{ borderColor: '#e2e8f0' }} />
+                </div>
+              ))}
+              <button onClick={handleSave} disabled={saving}
+                className="w-full py-2 rounded-lg text-sm font-semibold text-white" style={{ background: '#4f7dff' }}>
+                {saving ? 'Kaydediliyor...' : 'Kaydet'}
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2 text-sm" style={{ color: '#64748b' }}>
+              {!!client.email && <div>📧 {String(client.email)}</div>}
+              {!!client.phone && <div>📞 {String(client.phone)}</div>}
+              {!!client.tax_number && <div>🏢 Vergi No: {String(client.tax_number)}</div>}
+              {!!client.tax_office && <div>📋 Vergi Dairesi: {String(client.tax_office)}</div>}
+              {!!client.address && <div>📍 {String(client.address)}{client.city ? `, ${String(client.city)}` : ''}</div>}
+              <div>🔗 <code style={{ fontSize: 12, background: '#f1f5f9', padding: '2px 6px', borderRadius: 4 }}>{portalUrl}</code></div>
+            </div>
+          )}
+        </div>
+
+        {/* Stats */}
+        <div className="space-y-4">
+          <div className="rounded-2xl border p-6" style={{ background: '#fff', borderColor: '#e8edf8' }}>
+            <h2 className="font-semibold mb-3" style={{ fontSize: 15, color: '#0f172a' }}>Özet</h2>
+            <div className="grid grid-cols-2 gap-4">
+              <div><div style={{ fontSize: 24, fontWeight: 800, color: '#0f172a' }}>{files.length}</div><div style={{ fontSize: 12, color: '#64748b' }}>Dosya</div></div>
+              <div><div style={{ fontSize: 24, fontWeight: 800, color: '#0f172a' }}>{invoices.length}</div><div style={{ fontSize: 12, color: '#64748b' }}>Fatura</div></div>
+            </div>
+          </div>
+
+          {/* Recent Files */}
+          <div className="rounded-2xl border overflow-hidden" style={{ background: '#fff', borderColor: '#e8edf8' }}>
+            <div style={{ padding: '14px 20px', borderBottom: '1px solid #e8edf8', fontWeight: 600, fontSize: 14, color: '#0f172a' }}>Son Dosyalar</div>
+            {files.slice(0, 5).map(f => (
+              <div key={f.id as string} style={{ padding: '10px 20px', borderBottom: '1px solid #f1f5f9', fontSize: 13, color: '#64748b' }}>
+                📄 {f.name as string} · {f.size as string} · {new Date(f.created_at as string).toLocaleDateString('tr-TR')}
+              </div>
+            ))}
+            {files.length === 0 && <div style={{ padding: '20px', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>Henüz dosya yok</div>}
+          </div>
+        </div>
+      </div>
+
+      {/* Invoices */}
+      <div className="rounded-2xl border overflow-hidden" style={{ background: '#fff', borderColor: '#e8edf8' }}>
+        <div style={{ padding: '14px 20px', borderBottom: '1px solid #e8edf8', fontWeight: 600, fontSize: 14, color: '#0f172a' }}>Faturalar</div>
+        {invoices.length === 0 ? (
+          <div style={{ padding: '20px', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>Henüz fatura yok</div>
+        ) : (
+          <table className="w-full">
+            <thead style={{ background: '#f8fafc' }}>
+              <tr>
+                {['No', 'Tarih', 'Tutar', 'Durum'].map(h => <th key={h} style={{ padding: '8px 20px', textAlign: 'left', fontSize: 11, color: '#64748b', fontWeight: 600 }}>{h}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {invoices.map(inv => (
+                <tr key={inv.id as string} style={{ borderBottom: '1px solid #f1f5f9', cursor: 'pointer' }}
+                  onClick={() => router.push(`/dashboard/faturalar/${inv.id}`)}>
+                  <td style={{ padding: '10px 20px', fontSize: 13, fontWeight: 500, color: '#0f172a' }}>{inv.invoice_number as string}</td>
+                  <td style={{ padding: '10px 20px', fontSize: 13, color: '#64748b' }}>{new Date(inv.invoice_date as string).toLocaleDateString('tr-TR')}</td>
+                  <td style={{ padding: '10px 20px', fontSize: 13, fontWeight: 600, color: '#0f172a' }}>{formatTRY(Number(inv.total))}</td>
+                  <td style={{ padding: '10px 20px' }}><span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 100, background: inv.status === 'paid' ? '#ecfdf5' : '#eef2ff', color: inv.status === 'paid' ? '#10b981' : '#4f7dff' }}>{inv.status === 'paid' ? 'Ödendi' : inv.status === 'sent' ? 'Gönderildi' : 'Taslak'}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function formatTRY(n: number) { return n.toLocaleString('tr-TR', { minimumFractionDigits: 2 }) + ' ₺' }

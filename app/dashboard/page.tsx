@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getTenantContext } from '@/lib/tenant/auth'
 import Link from 'next/link'
 
 const card = {
@@ -12,6 +13,7 @@ const shadowMd = '0 4px 16px rgba(79,125,255,0.1), 0 1px 4px rgba(0,0,0,0.06)'
 export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  const { tenantId } = await getTenantContext()
   const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Kullanıcı'
 
   const [
@@ -20,10 +22,10 @@ export default async function DashboardPage() {
     { count: teamCount },
     { count: fileCount },
   ] = await Promise.all([
-    supabase.from('clients').select('*', { count: 'exact', head: true }).eq('user_id', user!.id),
-    supabase.from('services').select('*', { count: 'exact', head: true }).eq('user_id', user!.id),
-    supabase.from('team_members').select('*', { count: 'exact', head: true }).eq('user_id', user!.id),
-    supabase.from('files').select('*', { count: 'exact', head: true }).eq('user_id', user!.id),
+    supabase.from('clients').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId),
+    supabase.from('services').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId),
+    supabase.from('tenant_members').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId),
+    supabase.from('files').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId),
   ])
 
   const today = new Date().toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
@@ -164,17 +166,7 @@ export default async function DashboardPage() {
           <Link
             key={qa.title}
             href={qa.href}
-            style={{ ...card, padding: '18px', display: 'flex', alignItems: 'flex-start', gap: '14px', textDecoration: 'none', transition: 'all 0.2s ease' }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = '#4f7dff'
-              e.currentTarget.style.boxShadow = shadowMd
-              e.currentTarget.style.transform = 'translateY(-2px)'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = '#e8edf8'
-              e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.06)'
-              e.currentTarget.style.transform = 'translateY(0)'
-            }}
+            className="db-hover-card" style={{ ...card, padding: '18px', display: 'flex', alignItems: 'flex-start', gap: '14px', textDecoration: 'none', transition: 'all 0.2s ease' }}
           >
             <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: qa.iconBg, color: qa.iconColor, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               {qa.icon}
@@ -316,15 +308,7 @@ export default async function DashboardPage() {
           <Link
             key={c.name}
             href="/dashboard/musteriler"
-            style={{ ...card, padding: '16px', display: 'flex', alignItems: 'center', gap: '12px', textDecoration: 'none', transition: 'all 0.15s' }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = '#4f7dff'
-              e.currentTarget.style.boxShadow = shadowMd
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = '#e8edf8'
-              e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.06)'
-            }}
+            className="db-hover-card" style={{ ...card, padding: '16px', display: 'flex', alignItems: 'center', gap: '12px', textDecoration: 'none', transition: 'all 0.15s' }}
           >
             <div style={{ width: '40px', height: '40px', borderRadius: '11px', background: c.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display), Plus Jakarta Sans, sans-serif', fontWeight: 700, fontSize: '13px', color: 'white', flexShrink: 0 }}>
               {c.initials}

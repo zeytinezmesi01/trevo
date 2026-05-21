@@ -60,10 +60,20 @@ const DotsIcon = () => (
     <circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /><circle cx="5" cy="12" r="1" />
   </svg>
 )
+const InvoiceIcon = () => (
+  <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+    <line x1="16" y1="13" x2="8" y2="13" />
+    <line x1="16" y1="17" x2="8" y2="17" />
+    <polyline points="10 9 9 9 8 9" />
+  </svg>
+)
 
 const navItems = [
   { href: '/dashboard', icon: <HomeIcon />, label: 'Genel Bakış', exact: true },
   { href: '/dashboard/dosyalar', icon: <FolderIcon />, label: 'Dosyalar' },
+  { href: '/dashboard/faturalar', icon: <InvoiceIcon />, label: 'Faturalar' },
   { href: '/dashboard/hizmetler', icon: <BriefcaseIcon />, label: 'Hizmetler' },
   { href: '/dashboard/ekip', icon: <UsersIcon />, label: 'Ekip' },
   { href: '/dashboard/musteriler', icon: <HeartIcon />, label: 'Müşteriler' },

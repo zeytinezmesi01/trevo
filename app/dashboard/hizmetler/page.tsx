@@ -18,26 +18,35 @@ export default function HizmetlerPage() {
   const [loading, setLoading] = useState(true)
   const [form, setForm] = useState({ name: '', price: '', delivery: '', description: '' })
   const [saving, setSaving] = useState(false)
+  const [tenantId, setTenantId] = useState<string | null>(null)
   const supabase = createClient()
 
   const fetchHizmetler = async () => {
-    const { data } = await supabase.from('services').select('*').order('created_at', { ascending: false })
+    if (!tenantId) return
+    const { data } = await supabase.from('services').select('*').eq('tenant_id', tenantId).order('created_at', { ascending: false })
     setHizmetler(data || [])
     setLoading(false)
   }
 
-  useEffect(() => { fetchHizmetler() }, [])
+  useEffect(() => {
+    const init = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data: p } = await supabase.from('profiles').select('tenant_id').eq('id', user.id).maybeSingle()
+      if (p?.tenant_id) { setTenantId(p.tenant_id as string); fetchHizmetler() }
+    }
+    init()
+  }, [tenantId])
 
   const handleEkle = async () => {
-    if (!form.name || !form.price) return
+    if (!form.name || !form.price || !tenantId) return
     setSaving(true)
-    const { data: { user } } = await supabase.auth.getUser()
     await supabase.from('services').insert({
       name: form.name,
       price: parseFloat(form.price),
       delivery: form.delivery,
       description: form.description,
-      user_id: user!.id,
+      tenant_id: tenantId,
       status: 'Aktif'
     })
     setForm({ name: '', price: '', delivery: '', description: '' })
@@ -58,7 +67,7 @@ export default function HizmetlerPage() {
           <h1 className="text-2xl font-bold text-gray-900">Hizmetler</h1>
           <p className="text-gray-500 text-sm mt-1">Paketlerini oluştur ve müşterilerine sun</p>
         </div>
-        <button onClick={() => setModal(true)} className="bg-gray-900 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-700 transition-colors">
+        <button onClick={() => setModal(true)} className="bg-primary text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-primary-hover transition-colors">
           + Hizmet Ekle
         </button>
       </div>
@@ -83,7 +92,7 @@ export default function HizmetlerPage() {
                 <button onClick={() => handleSil(h.id)} className="flex-1 text-center text-xs bg-red-50 text-red-500 py-2 rounded-lg hover:bg-red-100 transition-colors">
                   Sil
                 </button>
-                <button className="flex-1 text-center text-xs bg-gray-900 text-white py-2 rounded-lg hover:bg-gray-700 transition-colors">
+                <button className="flex-1 text-center text-xs bg-primary text-white py-2 rounded-lg hover:bg-primary-hover transition-colors">
                   Paylaş
                 </button>
               </div>
@@ -111,24 +120,24 @@ export default function HizmetlerPage() {
             <div className="space-y-3">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Hizmet Adı *</label>
-                <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" placeholder="Logo Tasarımı" />
+                <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Logo Tasarımı" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Fiyat (₺) *</label>
-                <input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" placeholder="2500" />
+                <input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="2500" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Teslim Süresi</label>
-                <input value={form.delivery} onChange={(e) => setForm({ ...form, delivery: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" placeholder="5 iş günü" />
+                <input value={form.delivery} onChange={(e) => setForm({ ...form, delivery: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="5 iş günü" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Açıklama</label>
-                <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 resize-none" rows={3} placeholder="Hizmet hakkında kısa açıklama..." />
+                <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none" rows={3} placeholder="Hizmet hakkında kısa açıklama..." />
               </div>
             </div>
             <div className="flex gap-2 mt-4">
               <button onClick={() => setModal(false)} className="flex-1 bg-gray-100 text-gray-700 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-200 transition-colors">İptal</button>
-              <button onClick={handleEkle} disabled={saving} className="flex-1 bg-gray-900 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-gray-700 transition-colors disabled:opacity-50">
+              <button onClick={handleEkle} disabled={saving} className="flex-1 bg-primary text-white py-2.5 rounded-xl text-sm font-medium hover:bg-primary-hover transition-colors disabled:opacity-50">
                 {saving ? 'Kaydediliyor...' : 'Kaydet'}
               </button>
             </div>

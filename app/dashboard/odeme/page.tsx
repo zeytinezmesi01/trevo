@@ -76,7 +76,7 @@ export default function OdemePage() {
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
                 type="password"
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 font-mono"
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary font-mono"
                 placeholder="sandbox-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
               />
             </div>
@@ -86,7 +86,7 @@ export default function OdemePage() {
                 value={secretKey}
                 onChange={(e) => setSecretKey(e.target.value)}
                 type="password"
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 font-mono"
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary font-mono"
                 placeholder="sandbox-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
               />
             </div>
@@ -96,7 +96,7 @@ export default function OdemePage() {
             <button
               onClick={handleKaydet}
               disabled={saving}
-              className="bg-gray-900 text-white px-6 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-700 transition-colors disabled:opacity-50"
+              className="bg-primary text-white px-6 py-2.5 rounded-xl text-sm font-medium hover:bg-primary-hover transition-colors disabled:opacity-50"
             >
               {saving ? 'Kaydediliyor...' : 'Kaydet & Aktif Et'}
             </button>

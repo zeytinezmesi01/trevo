@@ -20,18 +20,29 @@ export default function DosyalarPage() {
   const [search, setSearch] = useState('')
   const [copied, setCopied] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+  const [tenantId, setTenantId] = useState<string | null>(null)
   const supabase = createClient()
 
   const fetchDosyalar = async () => {
+    if (!tenantId) return
     const { data } = await supabase
       .from('files')
       .select('*')
+      .eq('tenant_id', tenantId)
       .order('created_at', { ascending: false })
     setDosyalar(data || [])
     setLoading(false)
   }
 
-  useEffect(() => { fetchDosyalar() }, [])
+  useEffect(() => {
+    const init = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data: p } = await supabase.from('profiles').select('tenant_id').eq('id', user.id).maybeSingle()
+      if (p?.tenant_id) { setTenantId(p.tenant_id as string); fetchDosyalar() }
+    }
+    init()
+  }, [tenantId])
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -121,7 +132,7 @@ export default function DosyalarPage() {
           <button
             onClick={() => fileRef.current?.click()}
             disabled={uploading}
-            className="bg-gray-900 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-700 transition-colors disabled:opacity-50"
+            className="bg-primary text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-primary-hover transition-colors disabled:opacity-50"
           >
             {uploading ? '⏳ Yükleniyor...' : '+ Dosya Yükle'}
           </button>
@@ -134,7 +145,7 @@ export default function DosyalarPage() {
           placeholder="Dosya ara..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full max-w-sm border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+          className="w-full max-w-sm border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
         />
       </div>
 

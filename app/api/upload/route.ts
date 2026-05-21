@@ -1,6 +1,7 @@
 import { PutObjectCommand } from '@aws-sdk/client-s3'
 import { r2Client, R2_BUCKET, R2_PUBLIC_URL } from '@/lib/r2/client'
 import { createClient } from '@/lib/supabase/server'
+import { sendFileNotification } from '@/lib/email'
 import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
@@ -38,6 +39,39 @@ export async function POST(request: Request) {
     file_type: fileType,
     url: publicUrl,
   })
+
+  if (clientId) {
+    const { data: client } = await supabase
+      .from('clients')
+      .select('name, email, token')
+      .eq('id', clientId)
+      .single()
+
+    if (client?.email) {
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://trevo.app'
+
+      // Fetch brand for email
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('brand_name, brand_logo_url, brand_primary_color')
+        .eq('id', user.id)
+        .single()
+
+      await sendFileNotification({
+        clientName: client.name,
+        clientEmail: client.email,
+        fileName: file.name,
+        fileUrl: publicUrl,
+        portalUrl: `${baseUrl}/portal/${client.token}`,
+        brand: profile?.brand_name ? {
+          brandName: profile.brand_name,
+          brandLogoUrl: profile.brand_logo_url,
+          brandPrimaryColor: profile.brand_primary_color,
+          brandDomain: null,
+        } : undefined,
+      }).catch(() => {})
+    }
+  }
 
   return NextResponse.json({ url: publicUrl })
 }

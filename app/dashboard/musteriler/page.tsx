@@ -20,24 +20,34 @@ export default function MusterilerPage() {
   const [form, setForm] = useState({ name: '', company: '', email: '' })
   const [saving, setSaving] = useState(false)
   const [copied, setCopied] = useState<string | null>(null)
+  const [tenantId, setTenantId] = useState<string | null>(null)
   const supabase = createClient()
 
   const fetchMusteriler = async () => {
+    if (!tenantId) return
     const { data } = await supabase
       .from('clients')
       .select('*')
+      .eq('tenant_id', tenantId)
       .order('created_at', { ascending: false })
     setMusteriler(data || [])
     setLoading(false)
   }
 
-  useEffect(() => { fetchMusteriler() }, [])
+  useEffect(() => {
+    const init = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data: p } = await supabase.from('profiles').select('tenant_id').eq('id', user.id).maybeSingle()
+      if (p?.tenant_id) { setTenantId(p.tenant_id as string); fetchMusteriler() }
+    }
+    init()
+  }, [tenantId])
 
   const handleEkle = async () => {
-    if (!form.name) return
+    if (!form.name || !tenantId) return
     setSaving(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    await supabase.from('clients').insert({ ...form, user_id: user!.id })
+    await supabase.from('clients').insert({ ...form, tenant_id: tenantId })
     setForm({ name: '', company: '', email: '' })
     setModal(false)
     setSaving(false)
@@ -71,7 +81,7 @@ export default function MusterilerPage() {
         </div>
         <button
           onClick={() => setModal(true)}
-          className="bg-gray-900 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-700 transition-colors"
+          className="bg-primary text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-primary-hover transition-colors"
         >
           + Müşteri Ekle
         </button>
@@ -83,7 +93,7 @@ export default function MusterilerPage() {
           placeholder="Müşteri veya şirket ara..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full max-w-sm border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+          className="w-full max-w-sm border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
         />
       </div>
 
@@ -153,20 +163,20 @@ export default function MusterilerPage() {
             <div className="space-y-3">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Ad Soyad *</label>
-                <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" placeholder="Ahmet Yılmaz" />
+                <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Ahmet Yılmaz" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Şirket</label>
-                <input value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" placeholder="Şirket Adı" />
+                <input value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Şirket Adı" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">E-posta</label>
-                <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" placeholder="musteri@sirket.com" />
+                <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="musteri@sirket.com" />
               </div>
             </div>
             <div className="flex gap-2 mt-4">
               <button onClick={() => setModal(false)} className="flex-1 bg-gray-100 text-gray-700 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-200 transition-colors">İptal</button>
-              <button onClick={handleEkle} disabled={saving} className="flex-1 bg-gray-900 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-gray-700 transition-colors disabled:opacity-50">
+              <button onClick={handleEkle} disabled={saving} className="flex-1 bg-primary text-white py-2.5 rounded-xl text-sm font-medium hover:bg-primary-hover transition-colors disabled:opacity-50">
                 {saving ? 'Kaydediliyor...' : 'Ekle'}
               </button>
             </div>
