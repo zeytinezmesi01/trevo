@@ -1,8 +1,14 @@
 import { Resend } from 'resend'
 import { Brand, DEFAULT_BRAND } from '@/lib/types/brand'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'bildirim@trevo.app'
+
+let _resend: Resend | null = null
+function getResend(): Resend | null {
+  if (!process.env.RESEND_API_KEY) return null
+  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY)
+  return _resend
+}
 
 export async function sendTeamInvitation({
   email,
@@ -13,7 +19,7 @@ export async function sendTeamInvitation({
   tenantName: string
   inviteUrl: string
 }) {
-  await resend.emails.send({
+  const r = getResend(); if (!r) return; await r.emails.send({
     from: `Trevo <${FROM_EMAIL}>`,
     to: email,
     subject: `${tenantName} sizi ekibine davet etti`,
@@ -68,7 +74,7 @@ export async function sendFileNotification({
   const primaryColor = b.brandPrimaryColor || '#111827'
   const fromEmail = process.env.RESEND_FROM_EMAIL || `bildirim@trevo.app`
 
-  await resend.emails.send({
+  const r = getResend(); if (!r) return; await r.emails.send({
     from: `${brandName} <${fromEmail}>`,
     to: clientEmail,
     subject: `Yeni dosyanız hazır: ${fileName}`,

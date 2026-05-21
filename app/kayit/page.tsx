@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Brand, DEFAULT_BRAND } from '@/lib/types/brand'
 import { readBrandFromCookie } from '@/lib/brand/client'
 
-export default function KayitPage() {
+function KayitForm() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -197,5 +197,13 @@ export default function KayitPage() {
         </div>
       </div>
     </>
+  )
+}
+
+export default function KayitPage() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f0f4ff' }}><p style={{ color: '#94a3b8' }}>Yükleniyor...</p></div>}>
+      <KayitForm />
+    </Suspense>
   )
 }

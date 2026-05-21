@@ -4,7 +4,6 @@ import { getInvoice, updateInvoiceStatus } from '@/lib/invoice/server'
 import { generateAndStoreInvoicePDF } from '@/lib/pdf/generate-invoice'
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
 const FROM = process.env.RESEND_FROM_EMAIL || 'Trevo <bildirim@trevo.app>'
 
 export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -15,16 +14,16 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   if (!invoice) return NextResponse.json({ error: 'Bulunamadı' }, { status: 404 })
   if (!invoice.client_email) return NextResponse.json({ error: 'Müşteri e-postası yok' }, { status: 400 })
 
-  // Generate PDF first
   const pdfUrl = await generateAndStoreInvoicePDF(id, ctx.tenantId)
-
   const total = Number(invoice.total).toLocaleString('tr-TR', { minimumFractionDigits: 2 })
 
-  await resend.emails.send({
-    from: FROM,
-    to: invoice.client_email as string,
-    subject: `Faturanız: ${invoice.invoice_number} — ${total} ₺`,
-    html: `
+  if (process.env.RESEND_API_KEY) {
+    const resend = new Resend(process.env.RESEND_API_KEY)
+    await resend.emails.send({
+      from: FROM,
+      to: invoice.client_email as string,
+      subject: `Faturanız: ${invoice.invoice_number} — ${total} ₺`,
+      html: `
 <!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"></head>
 <body style="margin:0;padding:0;background:#f0f4ff;font-family:-apple-system,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f4ff;padding:40px 20px;">
@@ -45,7 +44,8 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     </td></tr>
   </table>
 </body></html>`,
-  })
+    }).catch(() => {})
+  }
 
   await updateInvoiceStatus(id, ctx.tenantId, 'sent', {
     emailed_at: new Date().toISOString(),
