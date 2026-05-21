@@ -70,8 +70,17 @@ const InvoiceIcon = () => (
   </svg>
 )
 
+const BarChartIcon = () => (
+  <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="18" y1="20" x2="18" y2="10" />
+    <line x1="12" y1="20" x2="12" y2="4" />
+    <line x1="6" y1="20" x2="6" y2="14" />
+  </svg>
+)
+
 const navItems = [
   { href: '/dashboard', icon: <HomeIcon />, label: 'Genel Bakış', exact: true },
+  { href: '/dashboard/raporlar', icon: <BarChartIcon />, label: 'Raporlar' },
   { href: '/dashboard/dosyalar', icon: <FolderIcon />, label: 'Dosyalar' },
   { href: '/dashboard/faturalar', icon: <InvoiceIcon />, label: 'Faturalar' },
   { href: '/dashboard/hizmetler', icon: <BriefcaseIcon />, label: 'Hizmetler' },

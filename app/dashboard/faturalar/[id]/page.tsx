@@ -29,16 +29,11 @@ export default function FaturaDetayPage() {
     setTimeout(() => setMsg(''), 3000)
   }
 
-  const handlePDF = async () => {
+  const handlePDF = () => {
     setDownloading(true)
     setMsg('PDF hazırlanıyor...')
-    try {
-      const res = await fetch(`/api/invoices/${id}/pdf`)
-      if (res.redirected) window.open(res.url, '_blank')
-      else { const d = await res.json(); setMsg(d.error || 'Hata') }
-    } catch { setMsg('PDF hatası') }
-    setDownloading(false)
-    setTimeout(() => setMsg(''), 3000)
+    window.open(`/api/invoices/${id}/pdf`, '_blank')
+    setTimeout(() => { setDownloading(false); setMsg('') }, 3000)
   }
 
   const handleStatus = async (status: string) => {
