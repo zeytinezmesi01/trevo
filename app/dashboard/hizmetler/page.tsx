@@ -62,12 +62,17 @@ export default function HizmetlerPage() {
     setForm({ name: '', price: '', delivery: '', description: '' })
     setModal(false)
     setSaving(false)
-    if (tenantId) fetchHizmetler(tenantId)
+    fetchHizmetler(tid as string)
   }
 
   const handleSil = async (id: string) => {
     await supabase.from('services').delete().eq('id', id)
-    if (tenantId) fetchHizmetler(tenantId)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      const { data: p } = await supabase.from('profiles').select('tenant_id').eq('id', user.id).maybeSingle()
+      const tid = (p?.tenant_id || user.id) as string
+      fetchHizmetler(tid)
+    }
   }
 
   return (

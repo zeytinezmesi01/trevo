@@ -62,13 +62,18 @@ export default function MusterilerPage() {
     setForm({ name: '', company: '', email: '' })
     setModal(false)
     setSaving(false)
-    if (tenantId) fetchMusteriler(tenantId)
+    fetchMusteriler(actualTid)
   }
 
   const handleSil = async (id: string) => {
     if (!confirm('Bu müşteriyi silmek istediğine emin misin?')) return
     await supabase.from('clients').delete().eq('id', id)
-    if (tenantId) fetchMusteriler(tenantId)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      const { data: p } = await supabase.from('profiles').select('tenant_id').eq('id', user.id).maybeSingle()
+      const tid = (p?.tenant_id || user.id) as string
+      fetchMusteriler(tid)
+    }
   }
 
   const handlePortalKopyala = (token: string, id: string) => {

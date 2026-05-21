@@ -97,12 +97,14 @@ export default function DosyalarPage() {
     setTimeout(() => setProgress(''), 2000)
     setUploading(false)
     if (fileRef.current) fileRef.current.value = ''
-    if (tenantId) fetchDosyalar(tenantId)
+    const refreshTid = tenantId || (await supabase.auth.getUser()).data.user?.id as string
+    if (refreshTid) fetchDosyalar(refreshTid)
   }
 
   const handleSil = async (id: string) => {
     await supabase.from('files').delete().eq('id', id)
-    if (tenantId) fetchDosyalar(tenantId)
+    const refreshTid = tenantId || (await supabase.auth.getUser()).data.user?.id as string
+    if (refreshTid) fetchDosyalar(refreshTid)
   }
 
   const handleKopyala = (url: string, id: string) => {
