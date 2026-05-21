@@ -21,9 +21,8 @@ export default function HizmetlerPage() {
   const [tenantId, setTenantId] = useState<string | null>(null)
   const supabase = createClient()
 
-  const fetchHizmetler = async () => {
-    if (!tenantId) return
-    const { data } = await supabase.from('services').select('*').eq('tenant_id', tenantId).order('created_at', { ascending: false })
+  const fetchHizmetler = async (tid: string) => {
+    const { data } = await supabase.from('services').select('*').eq('tenant_id', tid).order('created_at', { ascending: false })
     setHizmetler(data || [])
     setLoading(false)
   }
@@ -31,33 +30,44 @@ export default function HizmetlerPage() {
   useEffect(() => {
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      if (!user) { setLoading(false); return }
       const { data: p } = await supabase.from('profiles').select('tenant_id').eq('id', user.id).maybeSingle()
-      if (p?.tenant_id) { setTenantId(p.tenant_id as string); fetchHizmetler() }
+      if (p?.tenant_id) {
+        const tid = p.tenant_id as string
+        setTenantId(tid)
+        await fetchHizmetler(tid)
+      } else {
+        const { data } = await supabase.from('services').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
+        setHizmetler(data || [])
+        setLoading(false)
+      }
     }
     init()
-  }, [tenantId])
+  }, [])
 
   const handleEkle = async () => {
-    if (!form.name || !form.price || !tenantId) return
+    if (!form.name || !form.price) return
+    const tid = tenantId || (await supabase.auth.getUser()).data.user?.id
+    if (!tid) return
     setSaving(true)
     await supabase.from('services').insert({
       name: form.name,
       price: parseFloat(form.price),
       delivery: form.delivery,
       description: form.description,
-      tenant_id: tenantId,
+      tenant_id: tid as string,
+      user_id: tid as string,
       status: 'Aktif'
     })
     setForm({ name: '', price: '', delivery: '', description: '' })
     setModal(false)
     setSaving(false)
-    fetchHizmetler()
+    if (tenantId) fetchHizmetler(tenantId)
   }
 
   const handleSil = async (id: string) => {
     await supabase.from('services').delete().eq('id', id)
-    fetchHizmetler()
+    if (tenantId) fetchHizmetler(tenantId)
   }
 
   return (

@@ -23,12 +23,11 @@ export default function MusterilerPage() {
   const [tenantId, setTenantId] = useState<string | null>(null)
   const supabase = createClient()
 
-  const fetchMusteriler = async () => {
-    if (!tenantId) return
+  const fetchMusteriler = async (tid: string) => {
     const { data } = await supabase
       .from('clients')
       .select('*')
-      .eq('tenant_id', tenantId)
+      .eq('tenant_id', tid)
       .order('created_at', { ascending: false })
     setMusteriler(data || [])
     setLoading(false)
@@ -37,27 +36,39 @@ export default function MusterilerPage() {
   useEffect(() => {
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      if (!user) { setLoading(false); return }
       const { data: p } = await supabase.from('profiles').select('tenant_id').eq('id', user.id).maybeSingle()
-      if (p?.tenant_id) { setTenantId(p.tenant_id as string); fetchMusteriler() }
+      if (p?.tenant_id) {
+        const tid = p.tenant_id as string
+        setTenantId(tid)
+        await fetchMusteriler(tid)
+      } else {
+        // Fallback: no tenant yet, try user_id
+        const { data } = await supabase.from('clients').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
+        setMusteriler(data || [])
+        setLoading(false)
+      }
     }
     init()
-  }, [tenantId])
+  }, [])
 
   const handleEkle = async () => {
-    if (!form.name || !tenantId) return
+    if (!form.name) return
+    const tid = tenantId || (await supabase.auth.getUser()).data.user?.id
+    if (!tid) return
     setSaving(true)
-    await supabase.from('clients').insert({ ...form, tenant_id: tenantId })
+    const actualTid = tid as string
+    await supabase.from('clients').insert({ ...form, tenant_id: actualTid, user_id: actualTid })
     setForm({ name: '', company: '', email: '' })
     setModal(false)
     setSaving(false)
-    fetchMusteriler()
+    if (tenantId) fetchMusteriler(tenantId)
   }
 
   const handleSil = async (id: string) => {
     if (!confirm('Bu müşteriyi silmek istediğine emin misin?')) return
     await supabase.from('clients').delete().eq('id', id)
-    fetchMusteriler()
+    if (tenantId) fetchMusteriler(tenantId)
   }
 
   const handlePortalKopyala = (token: string, id: string) => {

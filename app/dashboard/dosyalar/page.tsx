@@ -23,12 +23,11 @@ export default function DosyalarPage() {
   const [tenantId, setTenantId] = useState<string | null>(null)
   const supabase = createClient()
 
-  const fetchDosyalar = async () => {
-    if (!tenantId) return
+  const fetchDosyalar = async (tid: string) => {
     const { data } = await supabase
       .from('files')
       .select('*')
-      .eq('tenant_id', tenantId)
+      .eq('tenant_id', tid)
       .order('created_at', { ascending: false })
     setDosyalar(data || [])
     setLoading(false)
@@ -37,12 +36,20 @@ export default function DosyalarPage() {
   useEffect(() => {
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      if (!user) { setLoading(false); return }
       const { data: p } = await supabase.from('profiles').select('tenant_id').eq('id', user.id).maybeSingle()
-      if (p?.tenant_id) { setTenantId(p.tenant_id as string); fetchDosyalar() }
+      if (p?.tenant_id) {
+        const tid = p.tenant_id as string
+        setTenantId(tid)
+        await fetchDosyalar(tid)
+      } else {
+        const { data } = await supabase.from('files').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
+        setDosyalar(data || [])
+        setLoading(false)
+      }
     }
     init()
-  }, [tenantId])
+  }, [])
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -90,12 +97,12 @@ export default function DosyalarPage() {
     setTimeout(() => setProgress(''), 2000)
     setUploading(false)
     if (fileRef.current) fileRef.current.value = ''
-    fetchDosyalar()
+    if (tenantId) fetchDosyalar(tenantId)
   }
 
   const handleSil = async (id: string) => {
     await supabase.from('files').delete().eq('id', id)
-    fetchDosyalar()
+    if (tenantId) fetchDosyalar(tenantId)
   }
 
   const handleKopyala = (url: string, id: string) => {
