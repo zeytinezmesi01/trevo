@@ -31,7 +31,11 @@ export async function POST(request: Request) {
   const sizeMB = (file.size / 1024 / 1024).toFixed(1)
   const fileType = ext?.toUpperCase() || 'FILE'
 
+  const { data: profile } = await supabase.from('profiles').select('tenant_id').eq('id', user.id).maybeSingle()
+  const tenantId = profile?.tenant_id || user.id
+
   await supabase.from('files').insert({
+    tenant_id: tenantId,
     user_id: user.id,
     client_id: clientId || null,
     name: file.name,
