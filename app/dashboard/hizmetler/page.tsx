@@ -1,7 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { useState, useEffect } from 'react'
 
 type Service = {
   id: string
@@ -18,56 +17,40 @@ export default function HizmetlerPage() {
   const [loading, setLoading] = useState(true)
   const [form, setForm] = useState({ name: '', price: '', delivery: '', description: '' })
   const [saving, setSaving] = useState(false)
-  const [tenantId, setTenantId] = useState<string | null>(null)
-  const supabase = useMemo(() => createClient(), [])
 
-  const fetchHizmetler = async (tid: string) => {
-    const { data } = await supabase.from('services').select('*').eq('tenant_id', tid).order('created_at', { ascending: false })
-    setHizmetler(data || [])
+  const fetchHizmetler = async () => {
+    try {
+      const res = await fetch('/api/services')
+      if (res.ok) setHizmetler(await res.json())
+    } catch {}
     setLoading(false)
   }
 
-  useEffect(() => {
-    const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { setLoading(false); return }
-      const { data: p } = await supabase.from('profiles').select('tenant_id').eq('id', user.id).maybeSingle()
-      if (p?.tenant_id) {
-        const tid = p.tenant_id as string
-        setTenantId(tid)
-        await fetchHizmetler(tid)
-      } else {
-        const { data } = await supabase.from('services').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
-        setHizmetler(data || [])
-        setLoading(false)
-      }
-    }
-    init()
-  }, [])
+  useEffect(() => { fetchHizmetler() }, [])
 
   const handleEkle = async () => {
     if (!form.name || !form.price) return
-    const tid = tenantId || (await supabase.auth.getUser()).data.user?.id
-    if (!tid) return
     setSaving(true)
-    await supabase.from('services').insert({
-      name: form.name,
-      price: parseFloat(form.price),
-      delivery: form.delivery,
-      description: form.description,
-      tenant_id: tid as string,
-      user_id: tid as string,
-      status: 'Aktif'
-    })
-    setForm({ name: '', price: '', delivery: '', description: '' })
-    setModal(false)
+    try {
+      const res = await fetch('/api/services', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      })
+      if (res.ok) {
+        setForm({ name: '', price: '', delivery: '', description: '' })
+        setModal(false)
+        await fetchHizmetler()
+      }
+    } catch {}
     setSaving(false)
-    fetchHizmetler(tid as string)
   }
 
   const handleSil = async (id: string) => {
-    await supabase.from('services').delete().eq('id', id)
-    if (tenantId) fetchHizmetler(tenantId)
+    try {
+      await fetch(`/api/services/${id}`, { method: 'DELETE' })
+    } catch {}
+    fetchHizmetler()
   }
 
   return (
@@ -95,7 +78,7 @@ export default function HizmetlerPage() {
                 </span>
               </div>
               <h3 className="text-base font-semibold text-gray-900 mb-1">{h.name}</h3>
-              <div className="text-xl font-bold text-gray-900 mb-1">₺{h.price.toLocaleString('tr-TR')}</div>
+              <div className="text-xl font-bold text-gray-900 mb-1">₺{Number(h.price ?? 0).toLocaleString('tr-TR')}</div>
               {h.delivery && <div className="text-xs text-gray-400 mb-2">Teslim: {h.delivery}</div>}
               {h.description && <div className="text-xs text-gray-500 mb-4 line-clamp-2">{h.description}</div>}
               <div className="flex gap-2 mt-auto">

@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 
 export default function MusteriDetayPage() {
   const { id } = useParams<{ id: string }>()
@@ -14,37 +13,41 @@ export default function MusteriDetayPage() {
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
-  const supabase = createClient()
 
   useEffect(() => {
     const load = async () => {
-      const res = await fetch(`/api/tenant/members`).catch(() => null) // get tenant
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-      const { data: p } = await supabase.from('profiles').select('tenant_id').eq('id', user.id).maybeSingle()
-      if (!p?.tenant_id) return
-
-      const { data: c } = await supabase.from('clients').select('*').eq('id', id).eq('tenant_id', p.tenant_id).maybeSingle()
-      if (!c) { router.push('/dashboard/musteriler'); return }
-      setClient(c)
-      setForm({ name: c.name || '', company: c.company || '', email: c.email || '', tax_office: c.tax_office || '', tax_number: c.tax_number || '', address: c.address || '', city: c.city || '', phone: c.phone || '' })
-
-      const [{ data: f }, { data: inv }] = await Promise.all([
-        supabase.from('files').select('id, name, size, created_at').eq('client_id', id).order('created_at', { ascending: false }),
-        supabase.from('invoices').select('id, invoice_number, status, total, invoice_date').eq('client_id', id).order('created_at', { ascending: false }),
-      ])
-      setFiles(f || [])
-      setInvoices(inv || [])
-      setLoading(false)
+      try {
+        const res = await fetch(`/api/clients/${id}`)
+        if (!res.ok) { router.push('/dashboard/musteriler'); return }
+        const data = await res.json()
+        const c = data.client
+        setClient(c)
+        setForm({
+          name: c.name || '', company: c.company || '', email: c.email || '',
+          tax_office: c.tax_office || '', tax_number: c.tax_number || '',
+          address: c.address || '', city: c.city || '', phone: c.phone || '',
+        })
+        setFiles(data.files || [])
+        setInvoices(data.invoices || [])
+        setLoading(false)
+      } catch {
+        router.push('/dashboard/musteriler')
+      }
     }
     load()
-  }, [id])
+  }, [id, router])
 
   const handleSave = async () => {
     setSaving(true)
-    await supabase.from('clients').update(form).eq('id', id)
-    setClient({ ...client!, ...form })
-    setEditing(false)
+    try {
+      await fetch(`/api/clients/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      })
+      setClient({ ...client!, ...form })
+      setEditing(false)
+    } catch {}
     setSaving(false)
   }
 

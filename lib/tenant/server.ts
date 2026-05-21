@@ -3,45 +3,55 @@ import { createClient } from '@/lib/supabase/server'
 export async function createTenantForUser(userId: string): Promise<string | null> {
   const supabase = await createClient()
 
-  // Check if user already has a tenant
+  // 1. Profile already linked to a tenant → done
   const { data: existingProfile } = await supabase
     .from('profiles')
-    .select('tenant_id')
+    .select('tenant_id, full_name, company_name')
     .eq('id', userId)
     .maybeSingle()
 
   if (existingProfile?.tenant_id) return existingProfile.tenant_id as string
 
-  // Get profile info for tenant name
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('full_name, company_name')
-    .eq('id', userId)
+  // 2. A tenant may already exist for this user (tenants.owner_id is UNIQUE) —
+  //    reuse it instead of inserting a duplicate that would violate the index
+  const { data: existingTenant } = await supabase
+    .from('tenants')
+    .select('id')
+    .eq('owner_id', userId)
     .maybeSingle()
 
-  const tenantName = profile?.company_name || profile?.full_name || 'İşletmem'
+  let tenantId = existingTenant?.id as string | undefined
 
-  // Create tenant
-  const { data: tenant } = await supabase
-    .from('tenants')
-    .insert({ name: tenantName, owner_id: userId })
-    .select('id')
-    .single()
+  // 3. Create the tenant if none exists
+  if (!tenantId) {
+    const tenantName =
+      (existingProfile?.company_name as string) ||
+      (existingProfile?.full_name as string) ||
+      'İşletmem'
+    const { data: tenant } = await supabase
+      .from('tenants')
+      .insert({ name: tenantName, owner_id: userId })
+      .select('id')
+      .single()
+    if (!tenant) return null
+    tenantId = tenant.id as string
+  }
 
-  if (!tenant) return null
-
-  // Link profile to tenant
+  // 4. Upsert the profile so it always exists and is linked
+  //    (handles users whose profile row was never created)
   await supabase
     .from('profiles')
-    .update({ tenant_id: tenant.id, role: 'owner' })
-    .eq('id', userId)
+    .upsert({ id: userId, tenant_id: tenantId, role: 'owner' })
 
-  // Add as tenant_member
+  // 5. Ensure a tenant_members row exists
   await supabase
     .from('tenant_members')
-    .insert({ tenant_id: tenant.id, user_id: userId, role: 'owner', status: 'active', joined_at: new Date().toISOString() })
+    .upsert(
+      { tenant_id: tenantId, user_id: userId, role: 'owner', status: 'active', joined_at: new Date().toISOString() },
+      { onConflict: 'tenant_id,user_id' }
+    )
 
-  return tenant.id as string
+  return tenantId
 }
 
 export async function getTenantMembers(tenantId: string) {

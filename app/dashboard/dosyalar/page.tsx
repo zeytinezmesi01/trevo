@@ -1,7 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useMemo } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { useState, useEffect, useRef } from 'react'
 
 type FileItem = {
   id: string
@@ -20,36 +19,16 @@ export default function DosyalarPage() {
   const [search, setSearch] = useState('')
   const [copied, setCopied] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
-  const [tenantId, setTenantId] = useState<string | null>(null)
-  const supabase = useMemo(() => createClient(), [])
 
-  const fetchDosyalar = async (tid: string) => {
-    const { data } = await supabase
-      .from('files')
-      .select('*')
-      .eq('tenant_id', tid)
-      .order('created_at', { ascending: false })
-    setDosyalar(data || [])
+  const fetchDosyalar = async () => {
+    try {
+      const res = await fetch('/api/files')
+      if (res.ok) setDosyalar(await res.json())
+    } catch {}
     setLoading(false)
   }
 
-  useEffect(() => {
-    const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { setLoading(false); return }
-      const { data: p } = await supabase.from('profiles').select('tenant_id').eq('id', user.id).maybeSingle()
-      if (p?.tenant_id) {
-        const tid = p.tenant_id as string
-        setTenantId(tid)
-        await fetchDosyalar(tid)
-      } else {
-        const { data } = await supabase.from('files').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
-        setDosyalar(data || [])
-        setLoading(false)
-      }
-    }
-    init()
-  }, [])
+  useEffect(() => { fetchDosyalar() }, [])
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -58,51 +37,58 @@ export default function DosyalarPage() {
     setUploading(true)
     setProgress('Hazırlanıyor...')
 
-    // 1. Presigned URL al
-    const res = await fetch('/api/upload/presign', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        fileName: file.name,
-        fileType: file.type,
-        fileSize: file.size,
-      }),
-    })
+    try {
+      // 1. Presigned URL al
+      const res = await fetch('/api/upload/presign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileName: file.name,
+          fileType: file.type,
+          fileSize: file.size,
+        }),
+      })
 
-    const { signedUrl, error } = await res.json()
+      const { signedUrl, error } = await res.json()
 
-    if (error || !signedUrl) {
-      alert('Hata: ' + error)
-      setUploading(false)
+      if (error || !signedUrl) {
+        alert('Hata: ' + (error || 'Bilinmeyen hata'))
+        setUploading(false)
+        setProgress('')
+        return
+      }
+
+      // 2. Direkt R2'ye yükle (Vercel bypass)
+      setProgress('Yükleniyor...')
+      const uploadRes = await fetch(signedUrl, {
+        method: 'PUT',
+        body: file,
+        headers: { 'Content-Type': file.type },
+      })
+
+      if (!uploadRes.ok) {
+        alert('R2 yükleme hatası')
+        setUploading(false)
+        setProgress('')
+        return
+      }
+
+      setProgress('✓ Yüklendi!')
+      setTimeout(() => setProgress(''), 2000)
+    } catch {
+      alert('Yükleme sırasında hata oluştu')
       setProgress('')
-      return
     }
-
-    // 2. Direkt R2'ye yükle (Vercel bypass)
-    setProgress('Yükleniyor...')
-    const uploadRes = await fetch(signedUrl, {
-      method: 'PUT',
-      body: file,
-      headers: { 'Content-Type': file.type },
-    })
-
-    if (!uploadRes.ok) {
-      alert('R2 yükleme hatası')
-      setUploading(false)
-      setProgress('')
-      return
-    }
-
-    setProgress('✓ Yüklendi!')
-    setTimeout(() => setProgress(''), 2000)
     setUploading(false)
     if (fileRef.current) fileRef.current.value = ''
-    if (tenantId) fetchDosyalar(tenantId)
+    fetchDosyalar()
   }
 
   const handleSil = async (id: string) => {
-    await supabase.from('files').delete().eq('id', id)
-    if (tenantId) fetchDosyalar(tenantId)
+    try {
+      await fetch(`/api/files/${id}`, { method: 'DELETE' })
+    } catch {}
+    fetchDosyalar()
   }
 
   const handleKopyala = (url: string, id: string) => {

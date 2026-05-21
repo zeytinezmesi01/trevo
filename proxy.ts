@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -47,7 +47,7 @@ export async function middleware(request: NextRequest) {
       .from('profiles')
       .select('id')
       .eq('brand_domain', domain)
-      .single()
+      .maybeSingle()
 
     if (profile) {
       supabaseResponse.headers.set('x-brand-profile-id', profile.id as string)
