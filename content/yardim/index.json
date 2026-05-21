@@ -1,0 +1,47 @@
+{
+  "categories": ["Başlangıç", "Fatura", "Müşteri Portalı", "White-Label"],
+  "articles": [
+    {
+      "slug": "ilk-adimlar",
+      "title": "İlk Adımlar",
+      "description": "Domain bağlama, müşteri ekleme ve fatura kesme adımları",
+      "category": "Başlangıç",
+      "order": 1
+    },
+    {
+      "slug": "domain-baglama",
+      "title": "Domain Bağlama",
+      "description": "Kendi domain'inizi Trevo'ya nasıl bağlarsınız",
+      "category": "Başlangıç",
+      "order": 2
+    },
+    {
+      "slug": "fatura-kesme",
+      "title": "Fatura Kesme",
+      "description": "Adım adım fatura oluşturma ve gönderme",
+      "category": "Fatura",
+      "order": 1
+    },
+    {
+      "slug": "musteri-ekleme",
+      "title": "Müşteri Ekleme",
+      "description": "Yeni müşteri ekleme ve yönetme",
+      "category": "Fatura",
+      "order": 2
+    },
+    {
+      "slug": "portal-nedir",
+      "title": "Müşteri Portalı Nedir?",
+      "description": "Müşterilerinizin faturaları görüntüleyebileceği özel portal",
+      "category": "Müşteri Portalı",
+      "order": 1
+    },
+    {
+      "slug": "white-label-nedir",
+      "title": "White-Label Nedir?",
+      "description": "Trevo'yu kendi markanızla kullanma",
+      "category": "White-Label",
+      "order": 1
+    }
+  ]
+}
