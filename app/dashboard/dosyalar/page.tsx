@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 type FileItem = {
@@ -21,7 +21,7 @@ export default function DosyalarPage() {
   const [copied, setCopied] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const [tenantId, setTenantId] = useState<string | null>(null)
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   const fetchDosyalar = async (tid: string) => {
     const { data } = await supabase
@@ -97,14 +97,12 @@ export default function DosyalarPage() {
     setTimeout(() => setProgress(''), 2000)
     setUploading(false)
     if (fileRef.current) fileRef.current.value = ''
-    const refreshTid = tenantId || (await supabase.auth.getUser()).data.user?.id as string
-    if (refreshTid) fetchDosyalar(refreshTid)
+    if (tenantId) fetchDosyalar(tenantId)
   }
 
   const handleSil = async (id: string) => {
     await supabase.from('files').delete().eq('id', id)
-    const refreshTid = tenantId || (await supabase.auth.getUser()).data.user?.id as string
-    if (refreshTid) fetchDosyalar(refreshTid)
+    if (tenantId) fetchDosyalar(tenantId)
   }
 
   const handleKopyala = (url: string, id: string) => {

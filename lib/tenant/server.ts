@@ -68,10 +68,16 @@ export async function getTenantInvitations(tenantId: string) {
 
 export async function removeTenantMember(tenantId: string, memberId: string) {
   const supabase = await createClient()
-  // Remove from tenant_members
+  // Fetch user_id BEFORE deleting — row won't exist after delete
+  const { data: member } = await supabase
+    .from('tenant_members')
+    .select('user_id')
+    .eq('id', memberId)
+    .eq('tenant_id', tenantId)
+    .maybeSingle()
+
   await supabase.from('tenant_members').delete().eq('id', memberId).eq('tenant_id', tenantId)
-  // Also clear profile's tenant_id so they can't access
-  const { data: member } = await supabase.from('tenant_members').select('user_id').eq('id', memberId).maybeSingle()
+
   if (member?.user_id) {
     await supabase.from('profiles').update({ tenant_id: null, role: null }).eq('id', member.user_id)
   }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 type Client = {
@@ -21,7 +21,7 @@ export default function MusterilerPage() {
   const [saving, setSaving] = useState(false)
   const [copied, setCopied] = useState<string | null>(null)
   const [tenantId, setTenantId] = useState<string | null>(null)
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   const fetchMusteriler = async (tid: string) => {
     const { data } = await supabase
@@ -68,12 +68,7 @@ export default function MusterilerPage() {
   const handleSil = async (id: string) => {
     if (!confirm('Bu müşteriyi silmek istediğine emin misin?')) return
     await supabase.from('clients').delete().eq('id', id)
-    const { data: { user } } = await supabase.auth.getUser()
-    if (user) {
-      const { data: p } = await supabase.from('profiles').select('tenant_id').eq('id', user.id).maybeSingle()
-      const tid = (p?.tenant_id || user.id) as string
-      fetchMusteriler(tid)
-    }
+    if (tenantId) fetchMusteriler(tenantId)
   }
 
   const handlePortalKopyala = (token: string, id: string) => {

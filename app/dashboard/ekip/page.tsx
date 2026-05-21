@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 type Member = {
@@ -30,14 +30,12 @@ export default function EkipPage() {
   const [form, setForm] = useState({ email: '', role: 'member' })
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState('')
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   const fetchData = async () => {
     const res = await fetch('/api/tenant/members')
     if (res.ok) {
       const json = await res.json()
-      // Fetch emails for members via auth
-      const { data: { user } } = await supabase.auth.getUser()
       setMembers(json.members || [])
       setInvitations(json.invitations || [])
     }

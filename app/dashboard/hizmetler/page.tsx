@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 type Service = {
@@ -19,7 +19,7 @@ export default function HizmetlerPage() {
   const [form, setForm] = useState({ name: '', price: '', delivery: '', description: '' })
   const [saving, setSaving] = useState(false)
   const [tenantId, setTenantId] = useState<string | null>(null)
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   const fetchHizmetler = async (tid: string) => {
     const { data } = await supabase.from('services').select('*').eq('tenant_id', tid).order('created_at', { ascending: false })
@@ -67,12 +67,7 @@ export default function HizmetlerPage() {
 
   const handleSil = async (id: string) => {
     await supabase.from('services').delete().eq('id', id)
-    const { data: { user } } = await supabase.auth.getUser()
-    if (user) {
-      const { data: p } = await supabase.from('profiles').select('tenant_id').eq('id', user.id).maybeSingle()
-      const tid = (p?.tenant_id || user.id) as string
-      fetchHizmetler(tid)
-    }
+    if (tenantId) fetchHizmetler(tenantId)
   }
 
   return (
