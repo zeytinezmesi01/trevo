@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { GetObjectCommand } from '@aws-sdk/client-s3'
+
 import { getTenantContext } from '@/lib/tenant/auth'
 import { generateAndStoreInvoicePDF } from '@/lib/pdf/generate-invoice'
 import { createClient } from '@/lib/supabase/server'
@@ -31,21 +32,13 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
   if (!pdfUrl) return NextResponse.json({ error: 'PDF oluşturulamadı' }, { status: 500 })
 
-  // Proxy the PDF through our server to avoid CORS issues with direct R2 URLs
   const key = pdfUrl.replace(`${R2_PUBLIC_URL}/`, '')
   const obj = await r2Client.send(new GetObjectCommand({ Bucket: R2_BUCKET, Key: key }))
-  const body = obj.Body as import('stream').Readable
-  const { Readable } = await import('stream')
-  const nodeStream = body instanceof Readable ? body : Readable.from(body as AsyncIterable<Uint8Array>)
-  const webStream = new ReadableStream({
-    start(controller) {
-      nodeStream.on('data', (chunk) => controller.enqueue(chunk))
-      nodeStream.on('end', () => controller.close())
-      nodeStream.on('error', (err) => controller.error(err))
-    },
-  })
+  if (!obj.Body) return NextResponse.json({ error: 'PDF bulunamadı' }, { status: 404 })
 
-  return new Response(webStream, {
+  const bytes = await obj.Body.transformToByteArray()
+
+  return new Response(bytes, {
     headers: {
       'Content-Type': 'application/pdf',
       'Content-Disposition': `attachment; filename="fatura-${id}.pdf"`,
