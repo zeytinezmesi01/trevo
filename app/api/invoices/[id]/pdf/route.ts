@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server'
+import { GetObjectCommand } from '@aws-sdk/client-s3'
 import { getTenantContext } from '@/lib/tenant/auth'
 import { generateAndStoreInvoicePDF } from '@/lib/pdf/generate-invoice'
 import { createClient } from '@/lib/supabase/server'
+import { r2Client, R2_BUCKET, R2_PUBLIC_URL } from '@/lib/r2/client'
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const ctx = await getTenantContext()
   const { id } = await params
 
-  // Check if PDF already exists
   const supabase = await createClient()
   const { data: inv } = await supabase
     .from('invoices')
@@ -19,7 +20,6 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   if (!inv) return NextResponse.json({ error: 'Bulunamadı' }, { status: 404 })
 
   let pdfUrl = inv.pdf_url
-  // Regenerate if invoice was updated after PDF generation
   if (!pdfUrl || !inv.pdf_generated_at || new Date(inv.updated_at) > new Date(inv.pdf_generated_at)) {
     try {
       pdfUrl = await generateAndStoreInvoicePDF(id, ctx.tenantId)
@@ -31,5 +31,24 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
   if (!pdfUrl) return NextResponse.json({ error: 'PDF oluşturulamadı' }, { status: 500 })
 
-  return NextResponse.redirect(pdfUrl)
+  // Proxy the PDF through our server to avoid CORS issues with direct R2 URLs
+  const key = pdfUrl.replace(`${R2_PUBLIC_URL}/`, '')
+  const obj = await r2Client.send(new GetObjectCommand({ Bucket: R2_BUCKET, Key: key }))
+  const body = obj.Body as import('stream').Readable
+  const { Readable } = await import('stream')
+  const nodeStream = body instanceof Readable ? body : Readable.from(body as AsyncIterable<Uint8Array>)
+  const webStream = new ReadableStream({
+    start(controller) {
+      nodeStream.on('data', (chunk) => controller.enqueue(chunk))
+      nodeStream.on('end', () => controller.close())
+      nodeStream.on('error', (err) => controller.error(err))
+    },
+  })
+
+  return new Response(webStream, {
+    headers: {
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="fatura-${id}.pdf"`,
+    },
+  })
 }
