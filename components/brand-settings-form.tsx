@@ -47,7 +47,7 @@ export default function BrandSettingsForm() {
     const res = await fetch('/api/upload/presign', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fileName: `brand/${Date.now()}-${file.name}`, fileType: file.type, fileSize: file.size, skipFileRecord: true }),
+      body: JSON.stringify({ fileName: file.name, fileType: file.type, fileSize: file.size, skipFileRecord: true, purpose: 'brand' }),
     })
 
     const { signedUrl, publicUrl, error } = await res.json()

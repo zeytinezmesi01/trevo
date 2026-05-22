@@ -25,7 +25,7 @@ export async function POST(request: Request) {
   const ctx = await getTenantContext()
   if (!canUploadFiles(ctx.role)) return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
 
-  const { fileName, fileType, fileSize, clientId, sharedWithClient, skipFileRecord } = await request.json()
+  const { fileName, fileType, fileSize, clientId, sharedWithClient, skipFileRecord, purpose } = await request.json()
 
   // E-2: Dosya tipi/uzantı doğrulaması
   if (fileName && !isAllowedFileType(fileName)) {
@@ -58,8 +58,8 @@ export async function POST(request: Request) {
   }
 
   const ext = safeName.split('.').pop()
-  // Müşteriye ait dosyalar R2'de o müşterinin klasöründe saklanır; diğerleri 'genel'de
-  const folder = clientId || 'genel'
+  // Klasör mantığı: marka logosu → brand/, müşteri dosyası → clientId/, diğer → genel/
+  const folder = purpose === 'brand' ? 'brand' : (clientId || 'genel')
   const key = `${ctx.tenantId}/${folder}/${Date.now()}-${safeName}`
 
   const signedUrl = await getSignedUrl(

@@ -94,6 +94,14 @@ export default function AyarlarPage() {
 
   if (loading) return <div className="text-center py-16 text-gray-400 text-sm">Yükleniyor...</div>
 
+  // e-Fatura için gerekli alanlar (provisioning + ilk e-belge gönderimi düşünülerek)
+  const eInvoiceRequired = [
+    { label: 'Şirket / Unvan', value: form.company_name },
+    { label: 'Vergi Numarası', value: form.company_tax_number },
+    { label: 'Vergi Dairesi', value: form.company_tax_office },
+  ]
+  const eInvoiceMissing = eInvoiceRequired.filter(f => !(f.value ?? '').trim()).map(f => f.label)
+
   return (
     <div>
       <div className="mb-8">
@@ -250,18 +258,25 @@ export default function AyarlarPage() {
             </div>
           </div>
 
+          {!einvoiceEnabled && eInvoiceMissing.length > 0 && (
+            <div className="mb-4 px-4 py-3 bg-amber-50 border border-amber-100 rounded-xl text-sm text-amber-700">
+              <strong>Eksik alanlar:</strong> {eInvoiceMissing.join(', ')}. Yukarıdaki <em>Şirket Bilgileri</em> bölümünden doldurup <strong>kaydet</strong>tikten sonra etkinleştirebilirsin.
+            </div>
+          )}
+
           <div className="flex items-center gap-3">
             {!einvoiceEnabled && (
               <button
                 onClick={handleEInvoiceProvision}
-                disabled={provisioning}
-                className="bg-purple-600 text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-purple-700 transition-colors disabled:opacity-50"
+                disabled={provisioning || eInvoiceMissing.length > 0}
+                title={eInvoiceMissing.length > 0 ? 'Önce şirket bilgilerini tamamlayıp kaydedin' : undefined}
+                className="bg-purple-600 text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {provisioning ? 'Etkinleştiriliyor...' : "e-Fatura'yı Etkinleştir"}
               </button>
             )}
             {provisionMsg && (
-              <span className={`text-sm ${provisionMsg.includes('Hata') ? 'text-red-500' : 'text-green-600'}`}>
+              <span className={`text-sm ${provisionMsg.toLowerCase().includes('hata') ? 'text-red-500' : 'text-green-600'}`}>
                 {provisionMsg}
               </span>
             )}
@@ -277,16 +292,18 @@ export default function AyarlarPage() {
               if (!confirm('Hesabınızı ve tüm verilerinizi kalıcı olarak silmek istediğinize emin misiniz? Bu işlem GERİ ALINAMAZ.')) return
               if (!confirm('Son bir kez daha soruyoruz: Tüm müşteriler, dosyalar, faturalar ve ayarlar silinecek. Emin misiniz?')) return
               setDeleting(true)
-              const { data: { user } } = await supabase.auth.getUser()
-              if (user) {
-                const { data: p } = await supabase.from('profiles').select('tenant_id').eq('id', user.id).maybeSingle()
-                if (p?.tenant_id) {
-                  await supabase.from('profiles').update({ tenant_id: null, role: null }).eq('tenant_id', p.tenant_id)
-                  await supabase.from('tenant_members').delete().eq('tenant_id', p.tenant_id)
-                  await supabase.from('tenants').delete().eq('id', p.tenant_id)
+              try {
+                const res = await fetch('/api/account/delete', { method: 'POST' })
+                if (!res.ok) {
+                  const data = await res.json().catch(() => ({}))
+                  alert(data.error || 'Hesap silinemedi.')
+                  setDeleting(false)
+                  return
                 }
-                await supabase.from('profiles').delete().eq('id', user.id)
-                await supabase.auth.signOut()
+              } catch {
+                alert('Bağlantı hatası — hesap silinemedi.')
+                setDeleting(false)
+                return
               }
               window.location.href = '/'
             }}
