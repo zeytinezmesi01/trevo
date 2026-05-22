@@ -1,14 +1,34 @@
-import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { generateInvoiceNumber } from '@/lib/invoice/server'
+import { NextResponse, after } from 'next/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { dispatchEvent } from '@/lib/webhooks/dispatch'
+import { WEBHOOK_EVENTS } from '@/lib/webhooks/events'
+
+async function generateInvoiceNumber(tenantId: string): Promise<string> {
+  const admin = createAdminClient()
+  const { data } = await admin
+    .rpc('next_invoice_number', { p_tenant_id: tenantId })
+    .maybeSingle()
+  const row = data as { seq_prefix: string; seq_year: number; seq_number: number } | null
+  const prefix = row?.seq_prefix || 'TRV'
+  const year = row?.seq_year || new Date().getFullYear()
+  const num = row?.seq_number || 1
+  return `${prefix}${year}${String(num).padStart(4, '0')}`
+}
 
 export async function POST(request: Request) {
-  const supabase = await createClient()
+  // RLS bypass: portal token ile anon erişim — admin client kullan
+  const admin = createAdminClient()
   const { token, description, amount, note } = await request.json()
   if (!token) return NextResponse.json({ error: 'Token gerekli' }, { status: 400 })
 
+  // amount doğrulama
+  const parsedAmount = parseFloat(amount)
+  if (isNaN(parsedAmount) || parsedAmount < 0) {
+    return NextResponse.json({ error: 'Geçersiz tutar' }, { status: 400 })
+  }
+
   // Find client by portal token
-  const { data: client } = await supabase
+  const { data: client } = await admin
     .from('clients')
     .select('id, name, company, email, tenant_id')
     .eq('token', token)
@@ -16,19 +36,30 @@ export async function POST(request: Request) {
 
   if (!client?.tenant_id) return NextResponse.json({ error: 'Müşteri bulunamadı' }, { status: 404 })
 
-  const invoiceNumber = await generateInvoiceNumber(client.tenant_id as string)
+  const tenantId = client.tenant_id as string
 
-  const lineTotal = parseFloat(amount) || 0
+  // Tenant owner'ı bul (created_by için)
+  const { data: tenant } = await admin
+    .from('tenants')
+    .select('owner_id')
+    .eq('id', tenantId)
+    .maybeSingle()
+
+  if (!tenant?.owner_id) return NextResponse.json({ error: 'Kiracı bulunamadı' }, { status: 500 })
+
+  const invoiceNumber = await generateInvoiceNumber(tenantId)
+
+  const lineTotal = parsedAmount
   const kdvRate = 20
   const kdvAmount = lineTotal * kdvRate / 100
   const total = lineTotal + kdvAmount
 
-  const { data: invoice } = await supabase
+  const { data: invoice } = await admin
     .from('invoices')
     .insert({
-      tenant_id: client.tenant_id,
+      tenant_id: tenantId,
       client_id: client.id,
-      created_by: client.tenant_id, // fallback, ideally the owner
+      created_by: tenant.owner_id,
       invoice_number: invoiceNumber,
       invoice_date: new Date().toISOString().split('T')[0],
       notes: note,
@@ -48,16 +79,26 @@ export async function POST(request: Request) {
 
   if (!invoice) return NextResponse.json({ error: 'Fatura oluşturulamadı' }, { status: 500 })
 
-  await supabase.from('invoice_items').insert({
+  await admin.from('invoice_items').insert({
     invoice_id: invoice.id,
     description: description || 'Talep edilen hizmet',
     quantity: 1,
     unit: 'adet',
-    unit_price: parseFloat(amount) || 0,
+    unit_price: parsedAmount,
     kdv_rate: kdvRate,
     kdv_amount: kdvAmount,
     line_total: lineTotal,
     sort_order: 0,
+  })
+
+  after(() => {
+    dispatchEvent(tenantId, WEBHOOK_EVENTS.INVOICE_CREATED, {
+      id: invoice.id,
+      invoice_number: invoiceNumber,
+      client_name: client.name || '',
+      total,
+      status: 'draft',
+    }).catch(() => {})
   })
 
   return NextResponse.json({ ok: true, invoiceId: invoice.id })

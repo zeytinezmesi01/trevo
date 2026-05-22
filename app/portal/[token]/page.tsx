@@ -1,17 +1,20 @@
 import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { generatePortalBrand } from '@/lib/brand/server'
-import { Brand, DEFAULT_BRAND } from '@/lib/types/brand'
+import { DEFAULT_BRAND } from '@/lib/types/brand'
 import BrandStyle from '@/components/brand-style'
 import BrandLogo from '@/components/brand-logo'
 import PortalFaturaTalep from '@/components/portal-fatura-talep'
+import PortalPaymentButton from '@/components/portal-payment-button'
 
 export default async function PortalPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
-  const supabase = await createClient()
 
-  const { data: client } = await supabase
+  // RLS bypass: portal token ile anon erişim — admin client kullan
+  const admin = createAdminClient()
+
+  const { data: client } = await admin
     .from('clients')
     .select('*')
     .eq('token', token)
@@ -20,13 +23,13 @@ export default async function PortalPage({ params }: { params: Promise<{ token: 
   if (!client) notFound()
 
   const [{ data: files }, { data: invoices }] = await Promise.all([
-    supabase.from('files').select('*').eq('client_id', client.id).order('created_at', { ascending: false }),
-    supabase.from('invoices').select('id, invoice_number, invoice_date, status, total').eq('client_id', client.id).order('created_at', { ascending: false }),
+    admin.from('files').select('*').eq('client_id', client.id).order('created_at', { ascending: false }),
+    admin.from('invoices').select('id, invoice_number, invoice_date, status, total, amount_paid').eq('client_id', client.id).order('created_at', { ascending: false }),
   ])
 
   const headersList = await headers()
   const host = headersList.get('host') || ''
-  const brand = await generatePortalBrand(supabase, host)
+  const brand = await generatePortalBrand(admin, host)
 
   const typeColor: Record<string, string> = {
     PDF: 'bg-red-500', AI: 'bg-orange-500', ZIP: 'bg-purple-500',
@@ -77,7 +80,7 @@ export default async function PortalPage({ params }: { params: Promise<{ token: 
                     <div className="text-xs text-gray-400">{file.size} · {new Date(file.created_at).toLocaleDateString('tr-TR')}</div>
                   </div>
                   <a
-                    href={file.url}
+                    href={`/api/files/${file.id}/download?token=${token}`}
                     target="_blank"
                     rel="noreferrer"
                     className="flex-shrink-0 bg-primary text-primary-foreground text-xs font-medium px-4 py-2 rounded-lg hover:bg-primary-hover transition-colors"
@@ -118,6 +121,9 @@ export default async function PortalPage({ params }: { params: Promise<{ token: 
                       {inv.status === 'paid' ? 'Ödendi' : inv.status === 'sent' ? 'Gönderildi' : inv.status === 'draft' ? 'Taslak' : inv.status}
                     </span>
                     <span className="text-sm font-semibold text-gray-900">₺{Number(inv.total).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
+                    {(inv.status === 'sent' || inv.status === 'overdue') && Number(inv.amount_paid || 0) < Number(inv.total) && (
+                      <PortalPaymentButton invoiceId={inv.id} portalToken={token} />
+                    )}
                   </div>
                 </div>
               ))}

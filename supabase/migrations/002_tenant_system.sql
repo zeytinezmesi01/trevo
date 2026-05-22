@@ -52,9 +52,6 @@ ALTER TABLE files
 ALTER TABLE services
   ADD COLUMN IF NOT EXISTS tenant_id UUID REFERENCES tenants(id);
 
-ALTER TABLE team_members
-  ADD COLUMN IF NOT EXISTS tenant_id UUID REFERENCES tenants(id);
-
 -- 6. Add tax/billing fields to clients
 ALTER TABLE clients
   ADD COLUMN IF NOT EXISTS tax_office TEXT,

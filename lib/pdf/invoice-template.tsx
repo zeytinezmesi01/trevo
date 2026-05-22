@@ -49,6 +49,12 @@ const styles = StyleSheet.create({
   bankTitle: { fontSize: 9, fontWeight: 700, marginBottom: 8 },
 })
 
+function formatDateStr(iso: string): string {
+  // "2026-05-22" → "22.05.2026" — zaman diliminden bağımsız
+  const m = iso?.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  return m ? `${m[3]}.${m[2]}.${m[1]}` : iso?.slice(0, 10) || ''
+}
+
 function fmt(n: number): string {
   return Number(n).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₺'
 }
@@ -96,12 +102,12 @@ export default function InvoicePDF({ invoice }: { invoice: Record<string, unknow
         <View style={{ flexDirection: 'row', gap: 40, marginBottom: 24 }}>
           <View>
             <Text style={styles.infoLabel}>Fatura Tarihi</Text>
-            <Text style={styles.infoValue}>{new Date(v('invoice_date')).toLocaleDateString('tr-TR')}</Text>
+            <Text style={styles.infoValue}>{formatDateStr(v('invoice_date'))}</Text>
           </View>
           {!!v('due_date') && (
             <View>
               <Text style={styles.infoLabel}>Son Ödeme</Text>
-              <Text style={styles.infoValue}>{new Date(v('due_date')).toLocaleDateString('tr-TR')}</Text>
+              <Text style={styles.infoValue}>{formatDateStr(v('due_date'))}</Text>
             </View>
           )}
         </View>

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import { Plus_Jakarta_Sans, Inter } from 'next/font/google'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { Brand, DEFAULT_BRAND } from '@/lib/types/brand'
 import BrandStyle from '@/components/brand-style'
 import './globals.css'
@@ -29,8 +29,9 @@ export async function generateMetadata(): Promise<Metadata> {
   let brand: Brand = DEFAULT_BRAND
   if (!isDefaultDomain) {
     try {
-      const supabase = await createClient()
-      const { data } = await supabase
+      // RLS bypass: layout anon çalışabilir, admin client kullan
+      const admin = createAdminClient()
+      const { data } = await admin
         .from('profiles')
         .select('brand_name, brand_primary_color')
         .eq('brand_domain', domain)
@@ -53,14 +54,44 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const headersList = await headers()
+  const host = headersList.get('host') || ''
+  const domain = host.replace(/:\d+$/, '').replace(/^www\./, '')
+  const isDefaultDomain = ['localhost', 'trevo.app', 'trevo.vercel.app'].some(
+    (d) => domain === d || domain.endsWith(`.${d}`)
+  )
+
+  let brand: Brand = DEFAULT_BRAND
+  if (!isDefaultDomain) {
+    try {
+      const admin = createAdminClient()
+      const { data } = await admin
+        .from('profiles')
+        .select('brand_name, brand_logo_url, brand_primary_color, brand_domain')
+        .eq('brand_domain', domain)
+        .maybeSingle()
+      if (data) {
+        brand = {
+          brandName: data.brand_name || DEFAULT_BRAND.brandName,
+          brandLogoUrl: data.brand_logo_url,
+          brandPrimaryColor: data.brand_primary_color || DEFAULT_BRAND.brandPrimaryColor,
+          brandDomain: data.brand_domain,
+        }
+      }
+    } catch { /* use defaults */ }
+  }
+
   return (
     <html lang="tr" className={`${jakartaSans.variable} ${inter.variable} h-full`}>
-      <body className="min-h-full flex flex-col antialiased">{children}</body>
+      <body className="min-h-full flex flex-col antialiased">
+        <BrandStyle brand={brand} />
+        {children}
+      </body>
     </html>
   )
 }

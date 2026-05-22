@@ -15,31 +15,24 @@ function KayitForm() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const [brand, setBrand] = useState<Brand>(DEFAULT_BRAND)
-  const [inviteToken, setInviteToken] = useState<string | null>(null)
   const [kvkkAccepted, setKvkkAccepted] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
+  const inviteToken = searchParams.get('invite')
 
   useEffect(() => {
-    const token = searchParams.get('invite')
-    if (token) {
-      setInviteToken(token)
-      // Fetch invitation to pre-fill email
-      const loadInvite = async () => {
-        const { data } = await supabase
-          .from('team_invitations')
-          .select('email, tenant_id')
-          .eq('token', token)
-          .eq('status', 'pending')
-          .maybeSingle()
-        if (data) {
-          setEmail(data.email)
-        }
+    if (!inviteToken) return
+    // Fetch invitation to pre-fill email
+    const loadInvite = async () => {
+      const res = await fetch(`/api/invitations/lookup?token=${encodeURIComponent(inviteToken)}`)
+      if (res.ok) {
+        const data = await res.json()
+        if (data.email) setEmail(data.email)
       }
-      loadInvite()
     }
-  }, [searchParams])
+    loadInvite()
+  }, [inviteToken])
 
   useEffect(() => {
     const loadBrand = async () => {
@@ -167,7 +160,7 @@ function KayitForm() {
                   className="mt-0.5" />
                 <label htmlFor="kvkk" className="text-xs text-gray-500">
                   <Link href="/gizlilik" className="text-primary hover:underline" target="_blank">Gizlilik Politikası</Link> ve{' '}
-                  <Link href="/kullanim" className="text-primary hover:underline" target="_blank">Kullanım Şartları</Link>'nı okudum, kabul ediyorum.
+                  <Link href="/kullanim" className="text-primary hover:underline" target="_blank">Kullanım Şartları</Link>&apos;nı okudum, kabul ediyorum.
                   Kişisel verilerimin <Link href="/kvkk" className="text-primary hover:underline" target="_blank">KVKK</Link> kapsamında işlenmesini onaylıyorum.
                 </label>
               </div>

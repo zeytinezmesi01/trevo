@@ -42,6 +42,11 @@ const CardIcon = () => (
     <line x1="1" y1="10" x2="23" y2="10" />
   </svg>
 )
+const KeyIcon = () => (
+  <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.78 7.78 5.5 5.5 0 0 1 7.78-7.78zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
+  </svg>
+)
 const SettingsIcon = () => (
   <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="12" r="3" />
@@ -216,7 +221,7 @@ export default function DashboardSidebar({
 
         {/* Ayarlar */}
         {(() => {
-          const active = isActive('/dashboard/ayarlar')
+          const active = isActive('/dashboard/ayarlar') && !pathname.startsWith('/dashboard/ayarlar/api')
           return (
             <Link
               href="/dashboard/ayarlar"
@@ -243,6 +248,39 @@ export default function DashboardSidebar({
             >
               <SettingsIcon />
               Ayarlar
+            </Link>
+          )
+        })()}
+
+        {/* API & Webhook */}
+        {(() => {
+          const active = pathname.startsWith('/dashboard/ayarlar/api')
+          return (
+            <Link
+              href="/dashboard/ayarlar/api"
+              className="flex items-center gap-2.5 transition-all"
+              style={{
+                padding: '9px 12px', borderRadius: '8px',
+                fontSize: '13.5px', fontWeight: 500,
+                color: active ? '#ffffff' : '#64748b',
+                background: active ? '#4f7dff' : 'transparent',
+                textDecoration: 'none',
+              }}
+              onMouseEnter={(e) => {
+                if (!active) {
+                  e.currentTarget.style.background = '#eef2ff'
+                  e.currentTarget.style.color = '#4f7dff'
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!active) {
+                  e.currentTarget.style.background = 'transparent'
+                  e.currentTarget.style.color = '#64748b'
+                }
+              }}
+            >
+              <KeyIcon />
+              API & Webhook
             </Link>
           )
         })()}

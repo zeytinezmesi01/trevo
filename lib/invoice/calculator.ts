@@ -43,5 +43,9 @@ export function formatTRY(amount: number): string {
 }
 
 export function formatDate(date: string): string {
-  return new Date(date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })
+  // "2026-05-22" → "22 Mayıs 2026" — zaman diliminden bağımsız
+  const m = date?.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (!m) return date?.slice(0, 10) || ''
+  const months = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık']
+  return `${parseInt(m[3])} ${months[parseInt(m[2]) - 1]} ${m[1]}`
 }

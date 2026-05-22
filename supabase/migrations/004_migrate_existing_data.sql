@@ -29,11 +29,6 @@ UPDATE services s
 SET tenant_id = (SELECT p.tenant_id FROM profiles p WHERE p.id = s.user_id)
 WHERE tenant_id IS NULL;
 
--- 6. Backfill tenant_id on team_members
-UPDATE team_members tm
-SET tenant_id = (SELECT p.tenant_id FROM profiles p WHERE p.id = tm.user_id)
-WHERE tenant_id IS NULL;
-
 -- 7. Add owner as tenant_member
 INSERT INTO tenant_members (tenant_id, user_id, role, status, joined_at)
 SELECT t.id, t.owner_id, 'owner', 'active', now()

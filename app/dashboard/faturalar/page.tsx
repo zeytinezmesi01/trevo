@@ -14,6 +14,8 @@ type Invoice = {
   invoice_date: string
   due_date: string | null
   created_at: string
+  einvoice_status?: string
+  einvoice_type?: string
 }
 
 const statusStyle: Record<string, { bg: string; color: string; label: string }> = {
@@ -24,10 +26,33 @@ const statusStyle: Record<string, { bg: string; color: string; label: string }> 
   cancelled:{ bg: '#f1f5f9', color: '#94a3b8', label: 'İptal' },
 }
 
+const einvoiceStyle: Record<string, { bg: string; color: string; label: string }> = {
+  pending:   { bg: '#fef3c7', color: '#d97706', label: 'E-Bekliyor' },
+  sent:      { bg: '#eef2ff', color: '#4f7dff', label: 'E-Gönderildi' },
+  accepted:  { bg: '#ecfdf5', color: '#10b981', label: 'E-Kabul' },
+  rejected:  { bg: '#fef2f2', color: '#ef4444', label: 'E-Red' },
+  error:     { bg: '#fef2f2', color: '#dc2626', label: 'E-Hata' },
+}
+
+function EinvoiceBadge({ status, type }: { status: string; type?: string }) {
+  const s = einvoiceStyle[status] || { bg: '#f1f5f9', color: '#64748b', label: status }
+  const t = type === 'e_fatura' ? 'e-Fatura' : type === 'e_arsiv' ? 'e-Arşiv' : ''
+  return (
+    <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 100, background: s.bg, color: s.color, fontWeight: 600, whiteSpace: 'nowrap' }}>
+      {s.label}{t ? ` (${t})` : ''}
+    </span>
+  )
+}
+
 export default function FaturalarPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
+  const [userRole, setUserRole] = useState<string>('')
   const router = useRouter()
+
+  useEffect(() => {
+    fetch('/api/me').then(r => r.json()).then(d => setUserRole(d.role || '')).catch(() => {})
+  }, [])
 
   const fetchData = async () => {
     try {
@@ -37,7 +62,15 @@ export default function FaturalarPage() {
     setLoading(false)
   }
 
-  useEffect(() => { fetchData() }, [])
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/invoices')
+        if (res.ok) setInvoices(await res.json())
+      } catch {}
+      setLoading(false)
+    })()
+  }, [])
 
   const handleStatus = async (id: string, newStatus: string) => {
     await fetch(`/api/invoices/${id}`, {
@@ -97,21 +130,28 @@ export default function FaturalarPage() {
                     <td style={{ padding: '14px 20px', fontSize: 13, color: '#64748b' }}>{formatDate(inv.invoice_date)}</td>
                     <td style={{ padding: '14px 20px', textAlign: 'right', fontSize: 14, fontWeight: 600, color: '#0f172a' }}>{formatTRY(inv.total)}</td>
                     <td style={{ padding: '14px 20px' }}>
-                      <span style={{ fontSize: 12, padding: '3px 10px', borderRadius: 100, background: s.bg, color: s.color, fontWeight: 600 }}>{s.label}</span>
+                      <div className="flex items-center gap-2">
+                        <span style={{ fontSize: 12, padding: '3px 10px', borderRadius: 100, background: s.bg, color: s.color, fontWeight: 600 }}>{s.label}</span>
+                        {inv.einvoice_status && inv.einvoice_status !== 'none' && (
+                          <EinvoiceBadge status={inv.einvoice_status} type={inv.einvoice_type} />
+                        )}
+                      </div>
                     </td>
                     <td style={{ padding: '14px 20px', textAlign: 'right' }}>
                       <div className="flex items-center justify-end gap-2">
                         <button onClick={() => router.push(`/dashboard/faturalar/${inv.id}`)} style={{ fontSize: 12, color: '#4f7dff', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 500 }}>Görüntüle</button>
-                        {inv.status === 'draft' && (
+                        {userRole !== 'viewer' && inv.status === 'draft' && (
                           <button onClick={async () => {
                             await fetch(`/api/invoices/${inv.id}/send`, { method: 'POST' })
                             fetchData()
                           }} style={{ fontSize: 12, color: '#10b981', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 500 }}>E-posta Gönder</button>
                         )}
-                        {inv.status === 'sent' && (
+                        {userRole !== 'viewer' && inv.status === 'sent' && (
                           <button onClick={() => handleStatus(inv.id, 'paid')} style={{ fontSize: 12, color: '#10b981', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 500 }}>Ödendi</button>
                         )}
-                        <button onClick={() => handleDelete(inv.id)} style={{ fontSize: 12, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}>Sil</button>
+                        {userRole !== 'viewer' && (
+                          <button onClick={() => handleDelete(inv.id)} style={{ fontSize: 12, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}>Sil</button>
+                        )}
                       </div>
                     </td>
                   </tr>

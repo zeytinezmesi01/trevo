@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getTenantContext } from '@/lib/tenant/auth'
 import { createClient } from '@/lib/supabase/server'
+import { canManageServices } from '@/lib/tenant/permissions'
 
 export async function GET() {
   const ctx = await getTenantContext()
@@ -15,6 +16,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const ctx = await getTenantContext()
+  if (!canManageServices(ctx.role)) return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
   const supabase = await createClient()
   const body = await request.json()
   if (!body.name) return NextResponse.json({ error: 'İsim gerekli' }, { status: 400 })
@@ -33,6 +35,9 @@ export async function POST(request: Request) {
     .select('*')
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    console.error('POST services error:', error)
+    return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
+  }
   return NextResponse.json(data)
 }

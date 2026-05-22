@@ -1,4 +1,5 @@
 import { createServerClient } from '@supabase/ssr'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function proxy(request: NextRequest) {
@@ -43,7 +44,13 @@ export async function proxy(request: NextRequest) {
   )
 
   if (!isDefaultDomain) {
-    const { data: profile } = await supabase
+    // RLS bypass: proxy'de kullanıcı oturumu olmayabilir, admin client kullan
+    const admin = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    )
+    const { data: profile } = await admin
       .from('profiles')
       .select('id')
       .eq('brand_domain', domain)

@@ -1,5 +1,6 @@
 import { Resend } from 'resend'
 import { Brand, DEFAULT_BRAND } from '@/lib/types/brand'
+import { escapeHtml } from '@/lib/escape-html'
 
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'bildirim@trevo.app'
 
@@ -19,6 +20,7 @@ export async function sendTeamInvitation({
   tenantName: string
   inviteUrl: string
 }) {
+  const safeTenantName = escapeHtml(tenantName)
   const r = getResend(); if (!r) return; await r.emails.send({
     from: `Trevo <${FROM_EMAIL}>`,
     to: email,
@@ -35,7 +37,7 @@ export async function sendTeamInvitation({
           <h1 style="margin:0;color:#ffffff;font-size:20px;font-weight:700;">Trevo</h1>
         </td></tr>
         <tr><td style="padding:32px;">
-          <h2 style="margin:0 0 8px;color:#0f172a;font-size:18px;">${tenantName} ekibine davet edildiniz</h2>
+          <h2 style="margin:0 0 8px;color:#0f172a;font-size:18px;">${safeTenantName} ekibine davet edildiniz</h2>
           <p style="margin:0 0 24px;color:#64748b;font-size:14px;line-height:1.6;">
             Ekibe katılmak için aşağıdaki butona tıklayın ve hesabınızı oluşturun.
             Davet 7 gün geçerlidir.
@@ -70,9 +72,11 @@ export async function sendFileNotification({
   brand?: Brand
 }) {
   const b = brand || DEFAULT_BRAND
-  const brandName = b.brandName || 'Trevo'
+  const brandName = escapeHtml(b.brandName || 'Trevo')
   const primaryColor = b.brandPrimaryColor || '#111827'
   const fromEmail = process.env.RESEND_FROM_EMAIL || `bildirim@trevo.app`
+  const safeClientName = escapeHtml(clientName)
+  const safeFileName = escapeHtml(fileName)
 
   const r = getResend(); if (!r) return; await r.emails.send({
     from: `${brandName} <${fromEmail}>`,
@@ -94,13 +98,13 @@ export async function sendFileNotification({
           </tr>
           <tr>
             <td style="padding:36px 40px;">
-              <p style="margin:0 0 8px;color:#6b7280;font-size:14px;">Merhaba ${clientName},</p>
+              <p style="margin:0 0 8px;color:#6b7280;font-size:14px;">Merhaba ${safeClientName},</p>
               <h2 style="margin:0 0 24px;color:#111827;font-size:20px;font-weight:600;">Yeni bir dosyanız paylaşıldı</h2>
 
               <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:20px;margin-bottom:28px;">
                 <p style="margin:0;color:#374151;font-size:14px;">
                   <span style="color:#6b7280;">Dosya adı:</span><br>
-                  <strong style="color:#111827;font-size:16px;">${fileName}</strong>
+                  <strong style="color:#111827;font-size:16px;">${safeFileName}</strong>
                 </p>
               </div>
 

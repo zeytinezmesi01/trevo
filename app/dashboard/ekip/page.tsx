@@ -44,7 +44,19 @@ export default function EkipPage() {
     setLoading(false)
   }
 
-  useEffect(() => { fetchData() }, [])
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/tenant/members')
+        if (res.ok) {
+          const json = await res.json()
+          setMembers(json.members || [])
+          setInvitations(json.invitations || [])
+        }
+      } catch {}
+      setLoading(false)
+    })()
+  }, [])
 
   const handleInvite = async () => {
     if (!form.email) return

@@ -19,6 +19,12 @@ export async function DELETE(request: Request) {
   }
 
   const { memberId } = await request.json()
-  await removeTenantMember(ctx.tenantId, memberId)
+  try {
+    await removeTenantMember(ctx.tenantId, memberId)
+  } catch (e) {
+    return NextResponse.json({
+      error: e instanceof Error ? e.message : 'Üye çıkarılamadı',
+    }, { status: 400 })
+  }
   return NextResponse.json({ ok: true })
 }

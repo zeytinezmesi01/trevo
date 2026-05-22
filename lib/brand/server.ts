@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { Brand, DEFAULT_BRAND } from '@/lib/types/brand'
 
 function buildBrandFromProfile(profile: Record<string, unknown> | null): Brand {
@@ -24,8 +24,9 @@ export async function getBrandByDomain(host: string): Promise<Brand> {
   const cached = brandCache.get(domain)
   if (cached && cached.expiresAt > Date.now()) return cached.brand
 
-  const supabase = await createClient()
-  const { data } = await supabase
+  // RLS bypass: anon ziyaretçiler için admin client
+  const admin = createAdminClient()
+  const { data } = await admin
     .from('profiles')
     .select('brand_name, brand_logo_url, brand_primary_color, brand_domain')
     .eq('brand_domain', domain)
@@ -40,6 +41,8 @@ export async function getBrandByUserId(userId: string): Promise<Brand> {
   const cached = brandCache.get(`user:${userId}`)
   if (cached && cached.expiresAt > Date.now()) return cached.brand
 
+  // Dashboard içi kullanım — RLS kullanıcının kendi profilini okumasına izin verir
+  const { createClient } = await import('@/lib/supabase/server')
   const supabase = await createClient()
   const { data } = await supabase
     .from('profiles')
@@ -52,9 +55,10 @@ export async function getBrandByUserId(userId: string): Promise<Brand> {
   return brand
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+import type { SupabaseClient } from '@supabase/supabase-js'
+
 export async function generatePortalBrand(
-  supabase: any,
+  supabase: SupabaseClient,
   host: string
 ): Promise<Brand> {
   const domain = host.replace(/:\d+$/, '').replace(/^www\./, '')

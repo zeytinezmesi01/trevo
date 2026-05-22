@@ -1,6 +1,9 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, after } from 'next/server'
 import { getTenantContext } from '@/lib/tenant/auth'
 import { createClient } from '@/lib/supabase/server'
+import { canManageClients } from '@/lib/tenant/permissions'
+import { dispatchEvent } from '@/lib/webhooks/dispatch'
+import { WEBHOOK_EVENTS } from '@/lib/webhooks/events'
 
 export async function GET() {
   const ctx = await getTenantContext()
@@ -18,6 +21,7 @@ export async function POST(request: Request) {
   const supabase = await createClient()
   const body = await request.json()
   if (!body.name) return NextResponse.json({ error: 'İsim gerekli' }, { status: 400 })
+  if (!canManageClients(ctx.role)) return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
 
   const { data, error } = await supabase
     .from('clients')
@@ -36,6 +40,22 @@ export async function POST(request: Request) {
     .select('*')
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    console.error('POST clients error:', error)
+    return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
+  }
+
+  const clientData = data
+  const tenantId = ctx.tenantId
+
+  after(() => {
+    dispatchEvent(tenantId, WEBHOOK_EVENTS.CLIENT_CREATED, {
+      id: clientData.id,
+      name: clientData.name,
+      company: clientData.company || null,
+      email: clientData.email || null,
+    }).catch(() => {})
+  })
+
   return NextResponse.json(data)
 }

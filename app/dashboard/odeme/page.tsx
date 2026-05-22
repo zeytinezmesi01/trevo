@@ -6,33 +6,57 @@ import { createClient } from '@/lib/supabase/client'
 export default function OdemePage() {
   const [apiKey, setApiKey] = useState('')
   const [secretKey, setSecretKey] = useState('')
+  const [mode, setMode] = useState<'sandbox' | 'production'>('sandbox')
+  const [aktif, setAktif] = useState(false)
   const [saving, setSaving] = useState(false)
   const [success, setSuccess] = useState(false)
-  const [aktif, setAktif] = useState(false)
+  const [testing, setTesting] = useState(false)
+  const [testResult, setTestResult] = useState<{ ok: boolean; msg: string } | null>(null)
   const supabase = createClient()
 
   useEffect(() => {
     const load = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      const { data } = await supabase.from('profiles').select('*').eq('id', user!.id).single()
-      if (data?.iyzico_api_key) { setApiKey(data.iyzico_api_key); setAktif(true) }
-      if (data?.iyzico_secret_key) setSecretKey(data.iyzico_secret_key)
+      const res = await fetch('/api/tenant/payments/keys')
+      if (res.ok) {
+        const data = await res.json()
+        if (data.apiKey) { setApiKey(data.apiKey); setAktif(true) }
+        // secretKey döndürülmez (güvenlik); yalnızca varlığı bildirilir
+        if (data.mode) setMode(data.mode as 'sandbox' | 'production')
+      }
     }
     load()
   }, [])
 
   const handleKaydet = async () => {
     setSaving(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    await supabase.from('profiles').upsert({
-      id: user!.id,
-      iyzico_api_key: apiKey,
-      iyzico_secret_key: secretKey,
-    })
-    setAktif(!!apiKey)
+    try {
+      const res = await fetch('/api/tenant/payments/keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey, secretKey, mode }),
+      })
+      if (res.ok) setAktif(!!apiKey)
+    } catch {}
     setSaving(false)
     setSuccess(true)
     setTimeout(() => setSuccess(false), 3000)
+  }
+
+  const handleTest = async () => {
+    setTesting(true)
+    setTestResult(null)
+    try {
+      const res = await fetch('/api/payments/test-connection', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey, secretKey, mode }),
+      })
+      const data = await res.json()
+      setTestResult({ ok: data.success, msg: data.message })
+    } catch {
+      setTestResult({ ok: false, msg: 'Bağlantı hatası' })
+    }
+    setTesting(false)
   }
 
   return (
@@ -52,7 +76,9 @@ export default function OdemePage() {
               {aktif ? 'Ödeme sistemi aktif' : 'Ödeme sistemi pasif'}
             </div>
             <div className={`text-xs mt-0.5 ${aktif ? 'text-green-600' : 'text-yellow-600'}`}>
-              {aktif ? 'iyzico API key bağlı, müşterilerden ödeme alabilirsin.' : 'iyzico API key girerek aktif et.'}
+              {aktif
+                ? `iyzico ${mode === 'production' ? 'PROD' : 'sandbox'} anahtarları bağlı.`
+                : 'iyzico API key girerek aktif et.'}
             </div>
           </div>
         </div>
@@ -90,6 +116,38 @@ export default function OdemePage() {
                 placeholder="sandbox-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
               />
             </div>
+
+            {/* Mod seçici */}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">Ortam</label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setMode('sandbox')}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium border transition-colors ${
+                    mode === 'sandbox'
+                      ? 'bg-yellow-50 border-yellow-300 text-yellow-800'
+                      : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  🧪 Sandbox (Test)
+                </button>
+                <button
+                  onClick={() => setMode('production')}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium border transition-colors ${
+                    mode === 'production'
+                      ? 'bg-green-50 border-green-300 text-green-800'
+                      : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  🚀 Production (Gerçek)
+                </button>
+              </div>
+              <p className="text-xs text-gray-400 mt-1.5">
+                {mode === 'sandbox'
+                  ? 'Sandbox modunda gerçek ödeme alınmaz, test amaçlıdır.'
+                  : 'Production modunda gerçek ödeme alınır. Gerçek iyzico API anahtarlarınızı girin.'}
+              </p>
+            </div>
           </div>
 
           <div className="flex items-center gap-3 mt-5">
@@ -100,7 +158,19 @@ export default function OdemePage() {
             >
               {saving ? 'Kaydediliyor...' : 'Kaydet & Aktif Et'}
             </button>
+            <button
+              onClick={handleTest}
+              disabled={testing || !apiKey}
+              className="px-5 py-2.5 rounded-xl text-sm font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50"
+            >
+              {testing ? 'Test ediliyor...' : 'Bağlantıyı Test Et'}
+            </button>
             {success && <span className="text-green-600 text-sm">✓ Kaydedildi</span>}
+            {testResult && (
+              <span className={`text-sm ${testResult.ok ? 'text-green-600' : 'text-red-500'}`}>
+                {testResult.ok ? '✓ ' : '✗ '}{testResult.msg}
+              </span>
+            )}
           </div>
         </div>
 
@@ -111,9 +181,9 @@ export default function OdemePage() {
             {[
               'iyzico\'da merchant hesabı aç (iyzipay.com)',
               'Dashboard → Ayarlar → API Anahtarları\'ndan key\'leri al',
-              'Yukarıya gir ve kaydet',
-              'Hizmet sayfasından müşteriye ödeme linki gönder',
-              'Ödeme geldiğinde otomatik bildirim al',
+              'Yukarıya gir, ortamı seç (sandbox/prod) ve kaydet',
+              'Müşteri portalında faturaların yanında "Öde" butonu belirir',
+              'Ödeme geldiğinde e-posta ile bildirim alırsın',
             ].map((step, i) => (
               <li key={i} className="flex items-start gap-3 text-sm text-gray-600">
                 <span className="w-5 h-5 bg-gray-100 rounded-full flex items-center justify-center text-xs font-semibold text-gray-500 flex-shrink-0 mt-0.5">

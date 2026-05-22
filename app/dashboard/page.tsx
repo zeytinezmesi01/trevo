@@ -21,11 +21,17 @@ export default async function DashboardPage() {
     { count: serviceCount },
     { count: teamCount },
     { count: fileCount },
+    { data: recentFilesData },
+    { data: invoicesData },
+    { data: membersData },
   ] = await Promise.all([
     supabase.from('clients').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId),
     supabase.from('services').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId),
     supabase.from('tenant_members').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId),
     supabase.from('files').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId),
+    supabase.from('files').select('id, name, file_type, size, created_at, client_id').eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(5),
+    supabase.from('invoices').select('id, invoice_number, client_name, status, total, created_at').eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(5),
+    supabase.from('tenant_members').select('id, user_id, role, status, joined_at').eq('tenant_id', tenantId).order('joined_at', { ascending: false }),
   ])
 
   const today = new Date().toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
@@ -90,24 +96,54 @@ export default async function DashboardPage() {
     },
   ]
 
-  const recentFiles = [
-    { name: 'Marka_Rehberi_v3.pdf', ext: 'PDF Dökümanı', size: '4.2 MB', client: 'BrandLab', clientColor: '#eef2ff', clientText: '#4f7dff', time: '2 sa önce', iconBg: '#eef2ff', iconColor: '#4f7dff' },
-    { name: 'Logo_Revizyonlar.zip', ext: 'ZIP Arşivi', size: '18.7 MB', client: 'PixelAjans', clientColor: '#ecfdf5', clientText: '#10b981', time: 'Dün', iconBg: '#f5f3ff', iconColor: '#8b5cf6' },
-    { name: 'Teklif_Mayis2026.docx', ext: 'Word Belgesi', size: '1.1 MB', client: 'NovaStudio', clientColor: '#fffbeb', clientText: '#f59e0b', time: '19 May', iconBg: '#fffbeb', iconColor: '#f59e0b' },
-  ]
+  // Son dosyalar
+  const recentFiles = (recentFilesData || []).map((f) => ({
+    id: f.id,
+    name: f.name,
+    ext: f.file_type || 'DOSYA',
+    size: f.size || '',
+    client: '',
+    clientColor: '#f1f5f9',
+    clientText: '#64748b',
+    time: f.created_at ? new Date(f.created_at).toLocaleDateString('tr-TR') : '',
+    iconBg: '#eef2ff',
+    iconColor: '#4f7dff',
+  }))
 
-  const activities = [
-    { bg: '#ecfdf5', color: '#10b981', text: <><strong>BrandLab</strong> portala erişti</>, time: '2 dakika önce', icon: <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" width="15" height="15"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> },
-    { bg: '#eef2ff', color: '#4f7dff', text: <><strong>Marka_Rehberi_v3.pdf</strong> yüklendi</>, time: '2 saat önce', icon: <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> },
-    { bg: '#fffbeb', color: '#f59e0b', text: <>Yeni hizmet <strong>SEO Paketi</strong> eklendi</>, time: 'Dün 14:30', icon: <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" width="15" height="15"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg> },
-    { bg: '#f5f3ff', color: '#8b5cf6', text: <><strong>Selin Demir</strong> ekibe katıldı</>, time: '2 gün önce', icon: <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" width="15" height="15"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> },
-  ]
+  // Aktiviteler (en son 5 fatura + ekip üyeleri)
+  const invoiceActivities = (invoicesData || []).map((inv) => ({
+    bg: '#eef2ff',
+    color: '#4f7dff',
+    text: <><strong>{inv.invoice_number}</strong> faturası oluşturuldu — {inv.client_name}</>,
+    time: inv.created_at ? new Date(inv.created_at).toLocaleDateString('tr-TR') : '',
+    icon: <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" width="15" height="15"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>,
+  }))
 
-  const clients = [
-    { initials: 'BL', gradient: 'linear-gradient(135deg,#4f7dff,#7aa0ff)', name: 'BrandLab', meta: '12 dosya · Aktif', dot: '#10b981' },
-    { initials: 'PA', gradient: 'linear-gradient(135deg,#8b5cf6,#a78bfa)', name: 'PixelAjans', meta: '8 dosya · Aktif', dot: '#10b981' },
-    { initials: 'NS', gradient: 'linear-gradient(135deg,#f59e0b,#fbbf24)', name: 'NovaStudio', meta: '5 dosya · Beklemede', dot: '#f59e0b' },
-  ]
+  const memberActivities = (membersData || []).filter(m => m.joined_at).map((m) => ({
+    bg: '#f5f3ff',
+    color: '#8b5cf6',
+    text: <>Ekip üyesi {m.role} rolüyle katıldı</>,
+    time: m.joined_at ? new Date(m.joined_at).toLocaleDateString('tr-TR') : '',
+    icon: <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" width="15" height="15"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+  }))
+
+  const activities = [...invoiceActivities, ...memberActivities].slice(0, 5)
+
+  // Müşteriler (son 5)
+  const { data: topClients } = await supabase
+    .from('clients')
+    .select('id, name, company, created_at')
+    .eq('tenant_id', tenantId)
+    .order('created_at', { ascending: false })
+    .limit(5)
+
+  const clients = (topClients || []).map((c, i) => ({
+    initials: (c.name || '??').slice(0, 2).toUpperCase(),
+    gradient: ['linear-gradient(135deg,#4f7dff,#7aa0ff)', 'linear-gradient(135deg,#8b5cf6,#a78bfa)', 'linear-gradient(135deg,#f59e0b,#fbbf24)', 'linear-gradient(135deg,#10b981,#34d399)', 'linear-gradient(135deg,#ef4444,#f87171)'][i % 5],
+    name: c.name,
+    meta: c.company || 'Müşteri',
+    dot: '#10b981',
+  }))
 
   return (
     <div>
@@ -201,7 +237,7 @@ export default async function DashboardPage() {
               </thead>
               <tbody>
                 {recentFiles.map((f, i) => (
-                  <tr key={f.name} style={{ borderBottom: i < recentFiles.length - 1 ? '1px solid #e8edf8' : 'none' }}>
+                  <tr key={f.id} style={{ borderBottom: i < recentFiles.length - 1 ? '1px solid #e8edf8' : 'none' }}>
                     <td style={{ padding: '13px 20px', verticalAlign: 'middle' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <div style={{ width: '34px', height: '34px', borderRadius: '9px', background: f.iconBg, color: f.iconColor, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>

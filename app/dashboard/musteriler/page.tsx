@@ -24,6 +24,16 @@ export default function MusterilerPage() {
   const [saving, setSaving] = useState(false)
   const [copied, setCopied] = useState<string | null>(null)
 
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/clients')
+        if (res.ok) setMusteriler(await res.json())
+      } catch {}
+      setLoading(false)
+    })()
+  }, [])
+
   const fetchMusteriler = async () => {
     try {
       const res = await fetch('/api/clients')
@@ -31,8 +41,6 @@ export default function MusterilerPage() {
     } catch {}
     setLoading(false)
   }
-
-  useEffect(() => { fetchMusteriler() }, [])
 
   const handleEkle = async () => {
     if (!form.name) return

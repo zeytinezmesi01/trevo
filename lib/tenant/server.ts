@@ -1,10 +1,13 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function createTenantForUser(userId: string): Promise<string | null> {
-  const supabase = await createClient()
+  // RLS bypass: kullanıcı daha tenant'a bağlı olmayabilir, profil/tenant bootstrap'ı
+  // için admin client kullan
+  const admin = createAdminClient()
 
   // 1. Profile already linked to a tenant → done
-  const { data: existingProfile } = await supabase
+  const { data: existingProfile } = await admin
     .from('profiles')
     .select('tenant_id, full_name, company_name')
     .eq('id', userId)
@@ -14,7 +17,7 @@ export async function createTenantForUser(userId: string): Promise<string | null
 
   // 2. A tenant may already exist for this user (tenants.owner_id is UNIQUE) —
   //    reuse it instead of inserting a duplicate that would violate the index
-  const { data: existingTenant } = await supabase
+  const { data: existingTenant } = await admin
     .from('tenants')
     .select('id')
     .eq('owner_id', userId)
@@ -28,7 +31,7 @@ export async function createTenantForUser(userId: string): Promise<string | null
       (existingProfile?.company_name as string) ||
       (existingProfile?.full_name as string) ||
       'İşletmem'
-    const { data: tenant } = await supabase
+    const { data: tenant } = await admin
       .from('tenants')
       .insert({ name: tenantName, owner_id: userId })
       .select('id')
@@ -39,12 +42,12 @@ export async function createTenantForUser(userId: string): Promise<string | null
 
   // 4. Upsert the profile so it always exists and is linked
   //    (handles users whose profile row was never created)
-  await supabase
+  await admin
     .from('profiles')
     .upsert({ id: userId, tenant_id: tenantId, role: 'owner' })
 
   // 5. Ensure a tenant_members row exists
-  await supabase
+  await admin
     .from('tenant_members')
     .upsert(
       { tenant_id: tenantId, user_id: userId, role: 'owner', status: 'active', joined_at: new Date().toISOString() },
@@ -81,10 +84,15 @@ export async function removeTenantMember(tenantId: string, memberId: string) {
   // Fetch user_id BEFORE deleting — row won't exist after delete
   const { data: member } = await supabase
     .from('tenant_members')
-    .select('user_id')
+    .select('user_id, role')
     .eq('id', memberId)
     .eq('tenant_id', tenantId)
     .maybeSingle()
+
+  // Owner çıkarılamaz
+  if (member?.role === 'owner') {
+    throw new Error('Kiracı sahibi çıkarılamaz')
+  }
 
   await supabase.from('tenant_members').delete().eq('id', memberId).eq('tenant_id', tenantId)
 
@@ -97,7 +105,7 @@ export async function getTenant(tenantId: string) {
   const supabase = await createClient()
   const { data } = await supabase
     .from('tenants')
-    .select('*')
+    .select('id, name, owner_id, created_at, updated_at')
     .eq('id', tenantId)
     .maybeSingle()
   return data

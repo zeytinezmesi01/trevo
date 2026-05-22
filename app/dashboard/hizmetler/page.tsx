@@ -15,8 +15,13 @@ export default function HizmetlerPage() {
   const [modal, setModal] = useState(false)
   const [hizmetler, setHizmetler] = useState<Service[]>([])
   const [loading, setLoading] = useState(true)
+  const [userRole, setUserRole] = useState<string>('')
   const [form, setForm] = useState({ name: '', price: '', delivery: '', description: '' })
   const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    fetch('/api/me').then(r => r.json()).then(d => setUserRole(d.role || '')).catch(() => {})
+  }, [])
 
   const fetchHizmetler = async () => {
     try {
@@ -26,7 +31,15 @@ export default function HizmetlerPage() {
     setLoading(false)
   }
 
-  useEffect(() => { fetchHizmetler() }, [])
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/services')
+        if (res.ok) setHizmetler(await res.json())
+      } catch {}
+      setLoading(false)
+    })()
+  }, [])
 
   const handleEkle = async () => {
     if (!form.name || !form.price) return
@@ -60,9 +73,11 @@ export default function HizmetlerPage() {
           <h1 className="text-2xl font-bold text-gray-900">Hizmetler</h1>
           <p className="text-gray-500 text-sm mt-1">Paketlerini oluştur ve müşterilerine sun</p>
         </div>
-        <button onClick={() => setModal(true)} className="bg-primary text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-primary-hover transition-colors">
-          + Hizmet Ekle
-        </button>
+        {userRole !== 'viewer' && (
+          <button onClick={() => setModal(true)} className="bg-primary text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-primary-hover transition-colors">
+            + Hizmet Ekle
+          </button>
+        )}
       </div>
 
       {loading ? (
@@ -82,9 +97,11 @@ export default function HizmetlerPage() {
               {h.delivery && <div className="text-xs text-gray-400 mb-2">Teslim: {h.delivery}</div>}
               {h.description && <div className="text-xs text-gray-500 mb-4 line-clamp-2">{h.description}</div>}
               <div className="flex gap-2 mt-auto">
-                <button onClick={() => handleSil(h.id)} className="flex-1 text-center text-xs bg-red-50 text-red-500 py-2 rounded-lg hover:bg-red-100 transition-colors">
-                  Sil
-                </button>
+                {userRole !== 'viewer' && (
+                  <button onClick={() => handleSil(h.id)} className="flex-1 text-center text-xs bg-red-50 text-red-500 py-2 rounded-lg hover:bg-red-100 transition-colors">
+                    Sil
+                  </button>
+                )}
                 <button className="flex-1 text-center text-xs bg-primary text-white py-2 rounded-lg hover:bg-primary-hover transition-colors">
                   Paylaş
                 </button>

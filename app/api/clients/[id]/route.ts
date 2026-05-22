@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getTenantContext } from '@/lib/tenant/auth'
 import { createClient } from '@/lib/supabase/server'
+import { canManageClients } from '@/lib/tenant/permissions'
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const ctx = await getTenantContext()
@@ -39,6 +40,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const { id } = await params
   const supabase = await createClient()
   const body = await request.json()
+  if (!canManageClients(ctx.role)) return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
 
   const update: Record<string, unknown> = {}
   for (const key of EDITABLE) {
@@ -51,7 +53,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     .eq('id', id)
     .eq('tenant_id', ctx.tenantId)
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    console.error('PATCH clients error:', error)
+    return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
+  }
   return NextResponse.json({ ok: true })
 }
 
@@ -59,6 +64,15 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   const ctx = await getTenantContext()
   const { id } = await params
   const supabase = await createClient()
-  await supabase.from('clients').delete().eq('id', id).eq('tenant_id', ctx.tenantId)
+  if (!canManageClients(ctx.role)) return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
+  const { error } = await supabase.from('clients').delete().eq('id', id).eq('tenant_id', ctx.tenantId)
+  if (error) {
+    console.error('DELETE clients error:', error)
+    // FK kısıtı — müşteriye bağlı fatura/dosya var
+    if (error.message?.includes('foreign key') || error.code === '23503') {
+      return NextResponse.json({ error: 'Bu müşteriye bağlı faturalar/dosyalar bulunuyor. Önce onları temizleyin.' }, { status: 409 })
+    }
+    return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
+  }
   return NextResponse.json({ ok: true })
 }

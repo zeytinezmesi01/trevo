@@ -17,8 +17,13 @@ export default function DosyalarPage() {
   const [uploading, setUploading] = useState(false)
   const [progress, setProgress] = useState('')
   const [search, setSearch] = useState('')
+  const [userRole, setUserRole] = useState<string>('')
   const [copied, setCopied] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    fetch('/api/me').then(r => r.json()).then(d => setUserRole(d.role || '')).catch(() => {})
+  }, [])
 
   const fetchDosyalar = async () => {
     try {
@@ -28,7 +33,15 @@ export default function DosyalarPage() {
     setLoading(false)
   }
 
-  useEffect(() => { fetchDosyalar() }, [])
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/files')
+        if (res.ok) setDosyalar(await res.json())
+      } catch {}
+      setLoading(false)
+    })()
+  }, [])
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -122,13 +135,15 @@ export default function DosyalarPage() {
             </span>
           )}
           <input type="file" ref={fileRef} onChange={handleUpload} className="hidden" />
-          <button
-            onClick={() => fileRef.current?.click()}
-            disabled={uploading}
-            className="bg-primary text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-primary-hover transition-colors disabled:opacity-50"
-          >
-            {uploading ? '⏳ Yükleniyor...' : '+ Dosya Yükle'}
-          </button>
+          {userRole !== 'viewer' && (
+            <button
+              onClick={() => fileRef.current?.click()}
+              disabled={uploading}
+              className="bg-primary text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-primary-hover transition-colors disabled:opacity-50"
+            >
+              {uploading ? '⏳ Yükleniyor...' : '+ Dosya Yükle'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -182,13 +197,15 @@ export default function DosyalarPage() {
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-3">
                         <button
-                          onClick={() => handleKopyala(dosya.url, dosya.id)}
+                          onClick={() => handleKopyala(`/api/files/${dosya.id}/download`, dosya.id)}
                           className={`text-xs font-medium transition-colors ${copied === dosya.id ? 'text-green-600' : 'text-indigo-600 hover:text-indigo-800'}`}
                         >
                           {copied === dosya.id ? '✓ Kopyalandı' : 'Linki Kopyala'}
                         </button>
-                        <a href={dosya.url} target="_blank" rel="noreferrer" className="text-xs text-gray-400 hover:text-gray-700">Aç</a>
-                        <button onClick={() => handleSil(dosya.id)} className="text-xs text-red-400 hover:text-red-600">Sil</button>
+                        <a href={`/api/files/${dosya.id}/download`} target="_blank" rel="noreferrer" className="text-xs text-gray-400 hover:text-gray-700">Aç</a>
+                        {userRole !== 'viewer' && (
+                          <button onClick={() => handleSil(dosya.id)} className="text-xs text-red-400 hover:text-red-600">Sil</button>
+                        )}
                       </div>
                     </td>
                   </tr>
