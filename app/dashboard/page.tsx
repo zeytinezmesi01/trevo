@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { getTenantContext } from '@/lib/tenant/auth'
 import Link from 'next/link'
+import SetupChecklist from '@/components/setup-checklist'
 
 const card = {
   background: '#ffffff',
@@ -173,6 +174,8 @@ export default async function DashboardPage() {
           </Link>
         </div>
       </div>
+
+      <SetupChecklist />
 
       {/* Stats Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>

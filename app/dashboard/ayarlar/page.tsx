@@ -56,21 +56,29 @@ export default function AyarlarPage() {
 
   const handleKaydet = async () => {
     setSaving(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    await supabase.from('profiles').upsert({
-      id: user!.id,
-      full_name: form.full_name,
-      company_name: form.company_name,
-      company_tax_number: form.company_tax_number || null,
-      company_tax_office: form.company_tax_office || null,
-      company_address: form.company_address || null,
-      company_city: form.company_city || null,
-      company_phone: form.company_phone || null,
-      company_bank_iban: form.company_bank_iban || null,
-    })
+    try {
+      const res = await fetch('/api/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        if (data.fields) {
+          const messages = Object.values(data.fields).join('\n')
+          alert('Doğrulama hatası:\n\n' + messages)
+        } else {
+          alert(data.error || 'Bir hata oluştu')
+        }
+        setSaving(false)
+        return
+      }
+      setSuccess(true)
+      setTimeout(() => setSuccess(false), 3000)
+    } catch {
+      alert('Bağlantı hatası')
+    }
     setSaving(false)
-    setSuccess(true)
-    setTimeout(() => setSuccess(false), 3000)
   }
 
   const handleEInvoiceProvision = async () => {
