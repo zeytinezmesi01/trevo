@@ -119,8 +119,13 @@ export default function MusteriDetayPage() {
           <div className="rounded-2xl border overflow-hidden" style={{ background: '#fff', borderColor: '#e8edf8' }}>
             <div style={{ padding: '14px 20px', borderBottom: '1px solid #e8edf8', fontWeight: 600, fontSize: 14, color: '#0f172a' }}>Son Dosyalar</div>
             {files.slice(0, 5).map(f => (
-              <div key={f.id as string} style={{ padding: '10px 20px', borderBottom: '1px solid #f1f5f9', fontSize: 13, color: '#64748b' }}>
-                📄 {f.name as string} · {f.size as string} · {new Date(f.created_at as string).toLocaleDateString('tr-TR')}
+              <div key={f.id as string} style={{ padding: '10px 20px', borderBottom: '1px solid #f1f5f9', fontSize: 13, color: '#64748b', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ flex: 1 }}>📄 {f.name as string} · {f.size as string} · {new Date(f.created_at as string).toLocaleDateString('tr-TR')}</span>
+                {f.shared_with_client ? (
+                  <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 100, background: '#ecfdf5', color: '#10b981' }}>Paylaşıldı</span>
+                ) : (
+                  <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 100, background: '#fffbeb', color: '#d97706' }}>Dahili</span>
+                )}
               </div>
             ))}
             {files.length === 0 && <div style={{ padding: '20px', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>Henüz dosya yok</div>}

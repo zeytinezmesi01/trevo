@@ -11,7 +11,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   const { id } = await params
   const supabase = await createClient()
 
-  // R2 nesnesini de sil
+  // R2 nesnelerini sil — güncel dosya + tüm sürümler
   const { data: file } = await supabase
     .from('files')
     .select('url')
@@ -19,13 +19,26 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     .eq('tenant_id', ctx.tenantId)
     .maybeSingle()
 
-  if (file?.url) {
-    const key = file.url.replace(`${R2_PUBLIC_URL}/`, '')
+  const { data: versions } = await supabase
+    .from('file_versions')
+    .select('url')
+    .eq('file_id', id)
+    .eq('tenant_id', ctx.tenantId)
+
+  const urls = new Set<string>()
+  if (file?.url) urls.add(file.url)
+  for (const v of versions || []) {
+    if (v.url) urls.add(v.url as string)
+  }
+
+  for (const url of urls) {
+    const key = url.replace(`${R2_PUBLIC_URL}/`, '')
     if (key && !key.includes('..')) {
       await r2Client.send(new DeleteObjectCommand({ Bucket: R2_BUCKET, Key: key })).catch(() => {})
     }
   }
 
+  // file_versions satırları ON DELETE CASCADE ile silinir
   await supabase.from('files').delete().eq('id', id).eq('tenant_id', ctx.tenantId)
   return NextResponse.json({ ok: true })
 }

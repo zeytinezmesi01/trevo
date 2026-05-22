@@ -8,11 +8,15 @@ import { dispatchEvent } from '@/lib/webhooks/dispatch'
 import { WEBHOOK_EVENTS } from '@/lib/webhooks/events'
 
 async function getNextDocumentSequence(supabase: Awaited<ReturnType<typeof createClient>>, tenantId: string): Promise<number> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .rpc('next_einvoice_number', { p_tenant_id: tenantId })
     .maybeSingle()
   const row = data as { seq_year: number; seq_number: number } | null
-  return row?.seq_number || 1
+  // Sessizce 1'e düşme: sayaç bozuksa aynı belge no'yu tekrar üretmek yerine açıkça hata ver
+  if (error || !row || typeof row.seq_number !== 'number') {
+    throw new Error(`Belge numarası üretilemedi: ${error?.message || 'sayaç geçersiz değer döndürdü'}`)
+  }
+  return row.seq_number
 }
 
 async function loadTenantOwnerProfile(

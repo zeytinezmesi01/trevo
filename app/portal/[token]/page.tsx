@@ -23,7 +23,7 @@ export default async function PortalPage({ params }: { params: Promise<{ token: 
   if (!client) notFound()
 
   const [{ data: files }, { data: invoices }] = await Promise.all([
-    admin.from('files').select('*').eq('client_id', client.id).order('created_at', { ascending: false }),
+    admin.from('files').select('*').eq('client_id', client.id).eq('shared_with_client', true).order('created_at', { ascending: false }),
     admin.from('invoices').select('id, invoice_number, invoice_date, status, total, amount_paid').eq('client_id', client.id).order('created_at', { ascending: false }),
   ])
 

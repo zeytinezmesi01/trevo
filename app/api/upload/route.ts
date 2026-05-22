@@ -42,6 +42,7 @@ export async function POST(request: Request) {
   const formData = await request.formData()
   const file = formData.get('file') as File
   const clientId = formData.get('clientId') as string | null
+  const sharedWithClient = formData.get('sharedWithClient') === 'true'
 
   if (!file) return NextResponse.json({ error: 'Dosya bulunamadı' }, { status: 400 })
 
@@ -59,8 +60,23 @@ export async function POST(request: Request) {
   // fileName temizleme: yol ayracı ve .. içermesin
   const safeName = file.name.replace(/[/\\]/g, '_').replace(/\.\./g, '')
 
+  const supabase = await createClient()
+
+  // Cross-tenant kontrol: clientId varsa tenant'a ait olduğunu doğrula
+  if (clientId) {
+    const { data: clientCheck } = await supabase
+      .from('clients')
+      .select('id')
+      .eq('id', clientId)
+      .eq('tenant_id', ctx.tenantId)
+      .maybeSingle()
+    if (!clientCheck) return NextResponse.json({ error: 'Geçersiz müşteri' }, { status: 403 })
+  }
+
   const ext = safeName.split('.').pop()
-  const key = `${ctx.tenantId}/${Date.now()}-${safeName}`
+  // Müşteriye ait dosyalar R2'de o müşterinin klasöründe saklanır; diğerleri 'genel'de
+  const folder = clientId || 'genel'
+  const key = `${ctx.tenantId}/${folder}/${Date.now()}-${safeName}`
   const buffer = Buffer.from(await file.arrayBuffer())
 
   await r2Client.send(new PutObjectCommand({
@@ -75,28 +91,30 @@ export async function POST(request: Request) {
   const fileType = ext?.toUpperCase() || 'FILE'
   const tenantId = ctx.tenantId
 
-  const supabase = await createClient()
-
-  // Cross-tenant kontrol: clientId varsa tenant'a ait olduğunu doğrula
-  if (clientId) {
-    const { data: clientCheck } = await supabase
-      .from('clients')
-      .select('id')
-      .eq('id', clientId)
-      .eq('tenant_id', tenantId)
-      .maybeSingle()
-    if (!clientCheck) return NextResponse.json({ error: 'Geçersiz müşteri' }, { status: 403 })
-  }
-
-  await supabase.from('files').insert({
+  const { data: newFile } = await supabase.from('files').insert({
     tenant_id: tenantId,
     user_id: ctx.userId,
     client_id: clientId || null,
+    shared_with_client: !!clientId && sharedWithClient,
     name: file.name,
     size: `${sizeMB} MB`,
     file_type: fileType,
     url: publicUrl,
-  })
+  }).select('id').single()
+
+  // v1 sürüm geçmişi kaydı
+  if (newFile) {
+    await supabase.from('file_versions').insert({
+      file_id: newFile.id,
+      tenant_id: tenantId,
+      version_number: 1,
+      name: file.name,
+      size: `${sizeMB} MB`,
+      file_type: fileType,
+      url: publicUrl,
+      uploaded_by: ctx.userId,
+    })
+  }
 
   if (clientId) {
     const { data: client } = await supabase

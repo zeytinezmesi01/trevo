@@ -20,7 +20,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const [{ data: files }, { data: invoices }] = await Promise.all([
     supabase
       .from('files')
-      .select('id, name, size, created_at')
+      .select('id, name, size, created_at, shared_with_client')
       .eq('client_id', id)
       .order('created_at', { ascending: false }),
     supabase

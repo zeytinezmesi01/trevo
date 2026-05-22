@@ -64,8 +64,16 @@ export default function MusterilerPage() {
   const handleSil = async (id: string) => {
     if (!confirm('Bu müşteriyi silmek istediğine emin misin?')) return
     try {
-      await fetch(`/api/clients/${id}`, { method: 'DELETE' })
-    } catch {}
+      const res = await fetch(`/api/clients/${id}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        alert(data.error || 'Müşteri silinemedi.')
+        return
+      }
+    } catch {
+      alert('Bağlantı hatası — müşteri silinemedi.')
+      return
+    }
     fetchMusteriler()
   }
 

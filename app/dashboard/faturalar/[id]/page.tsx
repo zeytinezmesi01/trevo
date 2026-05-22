@@ -140,7 +140,14 @@ export default function FaturaDetayPage() {
             </>
           )}
           {stat === 'paid' && (
-            <button onClick={handlePDF} disabled={downloading} className="px-4 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: '#4f7dff' }}>PDF İndir</button>
+            <>
+              <button onClick={handlePDF} disabled={downloading} className="px-4 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: '#4f7dff' }}>PDF İndir</button>
+              {(!eDoc || eDoc.status === 'error') && (
+                <button onClick={handleEInvoiceSend} disabled={eSending} className="px-4 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: '#8b5cf6' }}>
+                  {eSending ? '⏳' : 'e-Belge Gönder'}
+                </button>
+              )}
+            </>
           )}
         </div>
       </div>

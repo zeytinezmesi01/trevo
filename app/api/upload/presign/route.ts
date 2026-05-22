@@ -25,7 +25,7 @@ export async function POST(request: Request) {
   const ctx = await getTenantContext()
   if (!canUploadFiles(ctx.role)) return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
 
-  const { fileName, fileType, fileSize, clientId, skipFileRecord } = await request.json()
+  const { fileName, fileType, fileSize, clientId, sharedWithClient, skipFileRecord } = await request.json()
 
   // E-2: Dosya tipi/uzantı doğrulaması
   if (fileName && !isAllowedFileType(fileName)) {
@@ -45,8 +45,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Dosya boyutu 50 MB ile sınırlıdır' }, { status: 413 })
   }
 
+  // Cross-tenant kontrol: clientId varsa tenant'a ait olduğunu doğrula
+  if (clientId) {
+    const supabaseCheck = await createClient()
+    const { data: clientCheck } = await supabaseCheck
+      .from('clients')
+      .select('id')
+      .eq('id', clientId)
+      .eq('tenant_id', ctx.tenantId)
+      .maybeSingle()
+    if (!clientCheck) return NextResponse.json({ error: 'Geçersiz müşteri' }, { status: 403 })
+  }
+
   const ext = safeName.split('.').pop()
-  const key = `${ctx.tenantId}/${Date.now()}-${safeName}`
+  // Müşteriye ait dosyalar R2'de o müşterinin klasöründe saklanır; diğerleri 'genel'de
+  const folder = clientId || 'genel'
+  const key = `${ctx.tenantId}/${folder}/${Date.now()}-${safeName}`
 
   const signedUrl = await getSignedUrl(
     r2Client,
@@ -60,31 +74,35 @@ export async function POST(request: Request) {
 
   const publicUrl = `${R2_PUBLIC_URL}/${key}`
 
-  // Cross-tenant kontrol: clientId varsa tenant'a ait olduğunu doğrula
-  if (clientId) {
-    const supabaseCheck = await createClient()
-    const { data: clientCheck } = await supabaseCheck
-      .from('clients')
-      .select('id')
-      .eq('id', clientId)
-      .eq('tenant_id', ctx.tenantId)
-      .maybeSingle()
-    if (!clientCheck) return NextResponse.json({ error: 'Geçersiz müşteri' }, { status: 403 })
-  }
-
   // Brand logo gibi varlıklar Dosyalar listesinde görünmemeli
   if (!skipFileRecord) {
     const supabase = await createClient()
     const sizeMB = (fileSize / 1024 / 1024).toFixed(1)
-    await supabase.from('files').insert({
+    const fileTypeU = ext?.toUpperCase() || 'FILE'
+    const { data: newFile } = await supabase.from('files').insert({
       tenant_id: ctx.tenantId,
       user_id: ctx.userId,
       client_id: clientId || null,
+      shared_with_client: !!clientId && !!sharedWithClient,
       name: fileName,
       size: `${sizeMB} MB`,
-      file_type: ext?.toUpperCase() || 'FILE',
+      file_type: fileTypeU,
       url: publicUrl,
-    })
+    }).select('id').single()
+
+    // v1 sürüm geçmişi kaydı
+    if (newFile) {
+      await supabase.from('file_versions').insert({
+        file_id: newFile.id,
+        tenant_id: ctx.tenantId,
+        version_number: 1,
+        name: fileName,
+        size: `${sizeMB} MB`,
+        file_type: fileTypeU,
+        url: publicUrl,
+        uploaded_by: ctx.userId,
+      })
+    }
   }
 
   return NextResponse.json({ signedUrl, publicUrl })

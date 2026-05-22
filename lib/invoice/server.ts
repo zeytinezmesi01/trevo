@@ -88,7 +88,7 @@ export async function createInvoice(
   const displayKdvRate = data.vat_exempt ? 0 : (data.items[0]?.kdv_rate || 20)
 
   // G-1: Invoice ekle
-  const { data: invoice } = await client
+  const { data: invoice, error: invoiceError } = await client
     .from('invoices')
     .insert({
       tenant_id: tenantId,
@@ -117,7 +117,9 @@ export async function createInvoice(
     .select('id')
     .single()
 
-  if (!invoice) throw new Error('Fatura oluşturulamadı')
+  if (invoiceError || !invoice) {
+    throw new Error(`Fatura oluşturulamadı: ${invoiceError?.message || 'bilinmeyen hata'}${invoiceError?.code ? ` (kod: ${invoiceError.code})` : ''}`)
+  }
 
   // G-1: Items ekle; hata olursa faturayı temizle
   try {
