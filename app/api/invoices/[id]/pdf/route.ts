@@ -38,7 +38,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
   const bytes = await obj.Body.transformToByteArray()
 
-  return new Response(bytes, {
+  return new Response(Buffer.from(bytes), {
     headers: {
       'Content-Type': 'application/pdf',
       'Content-Disposition': `attachment; filename="fatura-${id}.pdf"`,
