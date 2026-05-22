@@ -3,6 +3,7 @@ import { getBrandByUserId } from '@/lib/brand/server'
 import { DEFAULT_BRAND } from '@/lib/types/brand'
 import DashboardSidebar from '@/components/dashboard-sidebar'
 import DashboardTopbar from '@/components/dashboard/topbar'
+import OnboardingModal from '@/components/onboarding-modal'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -40,6 +41,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           {children}
         </div>
       </main>
+      <OnboardingModal />
     </div>
   )
 }
