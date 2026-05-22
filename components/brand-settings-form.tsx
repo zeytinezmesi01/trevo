@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Brand, DEFAULT_BRAND } from '@/lib/types/brand'
+import BrandPreview from '@/components/brand-preview'
 
 export default function BrandSettingsForm() {
   const [form, setForm] = useState({
@@ -97,32 +97,15 @@ export default function BrandSettingsForm() {
     return <div className="text-center py-8 text-gray-400 text-sm">Yükleniyor...</div>
   }
 
-  const brandName = form.brand_name || 'Trevo'
   const primaryColor = form.brand_primary_color || '#111827'
 
   return (
     <div className="space-y-6">
-      {/* Canlı Önizleme */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-6">
-        <h2 className="text-base font-semibold text-gray-900 mb-4">Önizleme</h2>
-        <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
-          <div className="flex items-center gap-2">
-            {form.brand_logo_url ? (
-              <img src={form.brand_logo_url} alt="Logo" className="h-8 w-auto rounded" />
-            ) : (
-              <span className="text-lg font-bold tracking-tight" style={{ color: primaryColor }}>{brandName}</span>
-            )}
-          </div>
-          <div className="flex gap-2">
-            <div className="px-3 py-1.5 rounded-lg text-xs font-medium text-white" style={{ backgroundColor: primaryColor }}>
-              Buton
-            </div>
-            <div className="px-3 py-1.5 rounded-lg text-xs font-medium text-white opacity-80" style={{ backgroundColor: primaryColor }}>
-              Link
-            </div>
-          </div>
-        </div>
-      </div>
+      <BrandPreview
+        brandName={form.brand_name}
+        logoUrl={form.brand_logo_url}
+        primaryColor={form.brand_primary_color}
+      />
 
       {/* Marka Adı */}
       <div className="bg-white rounded-2xl border border-gray-100 p-6">
