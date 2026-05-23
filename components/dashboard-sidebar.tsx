@@ -86,9 +86,9 @@ const BarChartIcon = () => (
 
 const navItems = [
   { href: '/dashboard', icon: <HomeIcon />, label: 'Genel Bakış', exact: true, minRole: 'viewer' },
-  { href: '/dashboard/raporlar', icon: <BarChartIcon />, label: 'Raporlar', minRole: 'member' },
+  { href: '/dashboard/raporlar', icon: <BarChartIcon />, label: 'Raporlar', minRole: 'admin' },
   { href: '/dashboard/dosyalar', icon: <FolderIcon />, label: 'Dosyalar', minRole: 'viewer' },
-  { href: '/dashboard/faturalar', icon: <InvoiceIcon />, label: 'Faturalar', minRole: 'member' },
+  { href: '/dashboard/faturalar', icon: <InvoiceIcon />, label: 'Faturalar', minRole: 'admin' },
   { href: '/dashboard/hizmetler', icon: <BriefcaseIcon />, label: 'Hizmetler', minRole: 'admin' },
   { href: '/dashboard/ekip', icon: <UsersIcon />, label: 'Ekip', minRole: 'admin' },
   { href: '/dashboard/musteriler', icon: <HeartIcon />, label: 'Müşteriler', minRole: 'member' },

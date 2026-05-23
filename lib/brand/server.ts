@@ -68,6 +68,23 @@ export async function getBrandByUserId(userId: string): Promise<Brand> {
   return brand
 }
 
+export async function getBrandByTenantId(tenantId: string): Promise<Brand> {
+  const cached = brandCache.get(`tenant:${tenantId}`)
+  if (cached && cached.expiresAt > Date.now()) return cached.brand
+
+  const admin = createAdminClient()
+  const { data } = await admin
+    .from('profiles')
+    .select('brand_name, brand_logo_url, brand_primary_color, brand_domain')
+    .eq('tenant_id', tenantId)
+    .eq('role', 'owner')
+    .maybeSingle()
+
+  const brand = buildBrandFromProfile(data)
+  brandCache.set(`tenant:${tenantId}`, { brand, expiresAt: Date.now() + CACHE_TTL })
+  return brand
+}
+
 export async function generatePortalBrand(
   supabase: SupabaseClient,
   host: string

@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { getBrandByUserId } from '@/lib/brand/server'
+import { getBrandByTenantId } from '@/lib/brand/server'
 import { DEFAULT_BRAND } from '@/lib/types/brand'
 import DashboardSidebar from '@/components/dashboard-sidebar'
 import DashboardTopbar from '@/components/dashboard/topbar'
@@ -10,20 +10,24 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const brand = user ? await getBrandByUserId(user.id) : DEFAULT_BRAND
   const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Kullanıcı'
   const userEmail = user?.email || ''
 
-  // Kullanicinin rolunu al
+  // Profil bilgileri
   let userRole = 'member'
+  let userTenantId: string | null = null
   if (user) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, tenant_id')
       .eq('id', user.id)
       .maybeSingle()
     if (profile?.role) userRole = profile.role
+    if (profile?.tenant_id) userTenantId = profile.tenant_id
   }
+
+  // Brand'i tenant owner'indan al (ekip uyesi kendi profilinde brand tutmaz)
+  const brand = userTenantId ? await getBrandByTenantId(userTenantId) : DEFAULT_BRAND
 
   return (
     <div
@@ -54,7 +58,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           {children}
         </div>
       </main>
-      <OnboardingModal />
+      {userRole === 'owner' && <OnboardingModal />}
     </div>
   )
 }
