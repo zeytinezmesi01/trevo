@@ -85,24 +85,32 @@ const BarChartIcon = () => (
 )
 
 const navItems = [
-  { href: '/dashboard', icon: <HomeIcon />, label: 'Genel Bakış', exact: true },
-  { href: '/dashboard/raporlar', icon: <BarChartIcon />, label: 'Raporlar' },
-  { href: '/dashboard/dosyalar', icon: <FolderIcon />, label: 'Dosyalar' },
-  { href: '/dashboard/faturalar', icon: <InvoiceIcon />, label: 'Faturalar' },
-  { href: '/dashboard/hizmetler', icon: <BriefcaseIcon />, label: 'Hizmetler' },
-  { href: '/dashboard/ekip', icon: <UsersIcon />, label: 'Ekip' },
-  { href: '/dashboard/musteriler', icon: <HeartIcon />, label: 'Müşteriler' },
-  { href: '/dashboard/odeme', icon: <CardIcon />, label: 'Ödeme' },
+  { href: '/dashboard', icon: <HomeIcon />, label: 'Genel Bakış', exact: true, minRole: 'viewer' },
+  { href: '/dashboard/raporlar', icon: <BarChartIcon />, label: 'Raporlar', minRole: 'member' },
+  { href: '/dashboard/dosyalar', icon: <FolderIcon />, label: 'Dosyalar', minRole: 'viewer' },
+  { href: '/dashboard/faturalar', icon: <InvoiceIcon />, label: 'Faturalar', minRole: 'member' },
+  { href: '/dashboard/hizmetler', icon: <BriefcaseIcon />, label: 'Hizmetler', minRole: 'admin' },
+  { href: '/dashboard/ekip', icon: <UsersIcon />, label: 'Ekip', minRole: 'admin' },
+  { href: '/dashboard/musteriler', icon: <HeartIcon />, label: 'Müşteriler', minRole: 'member' },
+  { href: '/dashboard/odeme', icon: <CardIcon />, label: 'Ödeme', minRole: 'owner' },
 ]
+
+const ROLE_LEVEL: Record<string, number> = { owner: 4, admin: 3, member: 2, viewer: 1 }
+
+function hasMinRole(userRole: string, minRole: string): boolean {
+  return (ROLE_LEVEL[userRole] || 0) >= (ROLE_LEVEL[minRole] || 0)
+}
 
 export default function DashboardSidebar({
   brand,
   userName,
   userEmail,
+  userRole,
 }: {
   brand: Brand
   userName: string
   userEmail: string
+  userRole: string
 }) {
   const pathname = usePathname()
   const router = useRouter()
@@ -183,6 +191,7 @@ export default function DashboardSidebar({
         </div>
 
         {navItems.map((item) => {
+          if (!hasMinRole(userRole, item.minRole)) return null
           const active = isActive(item.href, item.exact)
           return (
             <Link
@@ -231,7 +240,7 @@ export default function DashboardSidebar({
         </div>
 
         {/* Ayarlar */}
-        {(() => {
+        {hasMinRole(userRole, 'admin') && (() => {
           const active = isActive('/dashboard/ayarlar') && !pathname.startsWith('/dashboard/ayarlar/api')
           return (
             <Link
@@ -264,7 +273,7 @@ export default function DashboardSidebar({
         })()}
 
         {/* API & Webhook */}
-        {(() => {
+        {hasMinRole(userRole, 'admin') && (() => {
           const active = pathname.startsWith('/dashboard/ayarlar/api')
           return (
             <Link

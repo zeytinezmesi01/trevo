@@ -14,6 +14,17 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Kullanıcı'
   const userEmail = user?.email || ''
 
+  // Kullanicinin rolunu al
+  let userRole = 'member'
+  if (user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle()
+    if (profile?.role) userRole = profile.role
+  }
+
   return (
     <div
       className="db-root"
@@ -26,7 +37,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       }}
     >
       <BrandStyle brand={brand} />
-      <DashboardSidebar brand={brand} userName={userName} userEmail={userEmail} />
+      <DashboardSidebar brand={brand} userName={userName} userEmail={userEmail} userRole={userRole} />
 
       <main
         style={{

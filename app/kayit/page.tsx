@@ -17,6 +17,12 @@ function KayitForm() {
   const [brand, setBrand] = useState<Brand>(DEFAULT_BRAND)
   const [isCustomDomain, setIsCustomDomain] = useState(false)
   const [kvkkAccepted, setKvkkAccepted] = useState(false)
+
+  // Key tabanli kayit
+  const [tab, setTab] = useState<'isletme' | 'kullanici'>('isletme')
+  const [regKey, setRegKey] = useState('')
+  const [validatingKey, setValidatingKey] = useState(false)
+
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
@@ -24,7 +30,6 @@ function KayitForm() {
 
   useEffect(() => {
     if (!inviteToken) return
-    // Fetch invitation to pre-fill email
     const loadInvite = async () => {
       const res = await fetch(`/api/invitations/lookup?token=${encodeURIComponent(inviteToken)}`)
       if (res.ok) {
@@ -38,6 +43,8 @@ function KayitForm() {
   useEffect(() => {
     const tenantId = readBrandTenantIdFromCookie()
     setIsCustomDomain(!!tenantId)
+    // Custom domain'de sadece kullanici kaydi yapilabilir
+    if (tenantId) setTab('kullanici')
 
     const profileId = readBrandFromCookie()
     if (!profileId) return
@@ -62,6 +69,29 @@ function KayitForm() {
     setLoading(true)
     setError('')
 
+    // Kullanici kaydinda key zorunlu
+    if (tab === 'kullanici') {
+      if (!regKey) {
+        setError('Kayıt anahtarı gerekli')
+        setLoading(false)
+        return
+      }
+      // Key validation
+      setValidatingKey(true)
+      const vRes = await fetch('/api/registration-keys/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: regKey, email }),
+      })
+      const vData = await vRes.json()
+      setValidatingKey(false)
+      if (!vData.valid) {
+        setError('Geçersiz veya süresi dolmuş kayıt anahtarı')
+        setLoading(false)
+        return
+      }
+    }
+
     const { error, data: signupData } = await supabase.auth.signUp({
       email,
       password,
@@ -77,7 +107,7 @@ function KayitForm() {
       return
     }
 
-    // If this was an invite, accept it
+    // Invite accept
     if (inviteToken && signupData.user) {
       await fetch('/api/tenant/accept-invite', {
         method: 'POST',
@@ -86,13 +116,12 @@ function KayitForm() {
       }).catch(() => {})
     }
 
-    // Custom domain'den kayit olan kullaniciyi domain sahibinin tenant'ina ekle
-    const domainTenantId = readBrandTenantIdFromCookie()
-    if (!inviteToken && domainTenantId && signupData.user) {
-      await fetch('/api/brand/domain/join', {
+    // Key ile kayit: consume + join
+    if (tab === 'kullanici' && regKey && signupData.user) {
+      await fetch('/api/registration-keys/consume', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tenant_id: domainTenantId }),
+        body: JSON.stringify({ key: regKey }),
       }).catch(() => {})
     }
 
@@ -130,7 +159,7 @@ function KayitForm() {
             {isCustomDomain ? (
               <>
                 <h1 className="text-xl font-semibold text-gray-900 mt-6 mb-1">{brandName} ekibine katıl</h1>
-                <p className="text-gray-500 text-sm">Ekip arkadaşlarınla birlikte çalış</p>
+                <p className="text-gray-500 text-sm">Ekip yöneticinizden aldığınız kayıt anahtarıyla kaydolun</p>
               </>
             ) : (
               <>
@@ -140,7 +169,44 @@ function KayitForm() {
             )}
           </div>
 
+          {/* Sekmeler — sadece default domain'de */}
+          {!isCustomDomain && (
+            <div className="flex bg-gray-100 rounded-xl p-1 mb-6">
+              <button
+                type="button"
+                onClick={() => setTab('isletme')}
+                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
+                  tab === 'isletme' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                İşletme Kaydı
+              </button>
+              <button
+                type="button"
+                onClick={() => setTab('kullanici')}
+                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
+                  tab === 'kullanici' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Kullanıcı Kaydı
+              </button>
+            </div>
+          )}
+
           <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">
+            {tab === 'isletme' && !isCustomDomain && (
+              <div className="bg-blue-50 text-blue-700 text-xs px-3 py-2 rounded-lg mb-4">
+                İşletmeniz için tam yetkili bir hesap oluşturursunuz. Fatura kesme, müşteri yönetimi,
+                ekip daveti ve tüm ayarlar bu hesapta olur.
+              </div>
+            )}
+            {tab === 'kullanici' && (
+              <div className="bg-green-50 text-green-700 text-xs px-3 py-2 rounded-lg mb-4">
+                Ekip yöneticinizin verdiği kayıt anahtarını kullanın. Yetkileriniz anahtarda
+                belirtilen role göre ayarlanır.
+              </div>
+            )}
+
             <form onSubmit={handleKayit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Ad Soyad</label>
@@ -177,6 +243,21 @@ function KayitForm() {
                 />
               </div>
 
+              {/* Key alani — kullanici kaydi */}
+              {tab === 'kullanici' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Kayıt Anahtarı</label>
+                  <input
+                    type="text"
+                    value={regKey}
+                    onChange={(e) => setRegKey(e.target.value)}
+                    required
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    placeholder="İşletme yöneticinizden alın"
+                  />
+                </div>
+              )}
+
               <div className="flex items-start gap-2">
                 <input type="checkbox" id="kvkk" checked={kvkkAccepted} onChange={(e) => setKvkkAccepted(e.target.checked)}
                   className="mt-0.5" />
@@ -198,7 +279,7 @@ function KayitForm() {
                 disabled={loading || !kvkkAccepted}
                 className="w-full bg-primary text-primary-foreground py-2.5 rounded-xl font-medium text-sm hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? 'Hesap oluşturuluyor...' : 'Hesap oluştur'}
+                {loading && validatingKey ? 'Anahtar kontrol ediliyor...' : loading ? 'Hesap oluşturuluyor...' : 'Hesap oluştur'}
               </button>
             </form>
           </div>

@@ -9,7 +9,7 @@ export async function GET() {
     getTenantMembers(ctx.tenantId),
     getTenantInvitations(ctx.tenantId),
   ])
-  return NextResponse.json({ members, invitations })
+  return NextResponse.json({ members, invitations, userRole: ctx.role })
 }
 
 export async function DELETE(request: Request) {
