@@ -77,20 +77,34 @@ export default function BrandSettingsForm() {
 
   const handleSave = async () => {
     setSaving(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-
-    await supabase.from('profiles').upsert({
-      id: user.id,
-      brand_name: form.brand_name || null,
-      brand_logo_url: form.brand_logo_url || null,
-      brand_primary_color: form.brand_primary_color || null,
-      brand_domain: form.brand_domain || null,
-    })
-
-    setSaving(false)
-    setSuccess(true)
-    setTimeout(() => setSuccess(false), 3000)
+    setSuccess(false)
+    try {
+      const res = await fetch('/api/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          brand_name: form.brand_name || null,
+          brand_logo_url: form.brand_logo_url || null,
+          brand_primary_color: form.brand_primary_color || null,
+          brand_domain: form.brand_domain || null,
+        }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        if (data.fields) {
+          alert('Doğrulama hatası:\n\n' + Object.values(data.fields).join('\n'))
+        } else {
+          alert(data.error || 'Kaydetme hatası')
+        }
+        return
+      }
+      setSuccess(true)
+      setTimeout(() => setSuccess(false), 3000)
+    } catch {
+      alert('Bağlantı hatası — kaydedilemedi.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   if (loading) {

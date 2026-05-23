@@ -68,17 +68,31 @@ export default function OnboardingModal() {
   const handleSave = async () => {
     if (!userId) return
     setSaving(true)
-    await supabase.from('profiles').upsert({
-      id: userId,
-      company_name: form.company_name?.trim() || null,
-      company_tax_number: form.company_tax_number?.trim() || null,
-      company_tax_office: form.company_tax_office?.trim() || null,
-      brand_name: form.brand_name?.trim() || null,
-      brand_primary_color: form.brand_primary_color || null,
-    })
+    try {
+      const res = await fetch('/api/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          company_name: form.company_name?.trim() || null,
+          company_tax_number: form.company_tax_number?.trim() || null,
+          company_tax_office: form.company_tax_office?.trim() || null,
+          brand_name: form.brand_name?.trim() || null,
+          brand_primary_color: form.brand_primary_color || null,
+        }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        alert(data.error || 'Kaydetme hatası')
+        setSaving(false)
+        return
+      }
+    } catch {
+      alert('Bağlantı hatası')
+      setSaving(false)
+      return
+    }
     setSaving(false)
     setShow(false)
-    // Marka renginin uygulanması için sayfayı yenile
     window.location.reload()
   }
 
