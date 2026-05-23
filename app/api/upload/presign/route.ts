@@ -32,8 +32,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Bu dosya türüne izin verilmiyor' }, { status: 400 })
   }
 
-  // fileName temizleme: yol ayracı ve .. içermesin
-  const safeName = fileName ? fileName.replace(/[/\\]/g, '_').replace(/\.\./g, '') : ''
+  // fileName temizleme: güvenli olmayan karakterleri kaldır, sadece ASCII + tire + alt çizgi + nokta kalsın
+  const safeName = fileName
+    ? fileName
+        .replace(/[/\\]/g, '_')
+        .replace(/\.\./g, '')
+        .replace(/\s+/g, '-')
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '')
+        .replace(/[^a-zA-Z0-9._-]/g, '')
+        .replace(/-+/g, '-')
+        .replace(/^[-.]+/, '')
+        .replace(/[-.]+$/, '')
+    : ''
 
 
   if (!safeName) {
