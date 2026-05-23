@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
@@ -43,8 +43,8 @@ export default function YeniFaturaPage() {
   const total = subtotal + kdvAmount
 
   const handleSave = async () => {
-    if (!selectedClient) { setError('Lütfen müşteri seçin'); return }
-    if (items.some(i => !i.description)) { setError('Tüm kalemlere açıklama girin'); return }
+    if (!selectedClient) { setError('LÃ¼tfen mÃ¼ÅŸteri seÃ§in'); return }
+    if (items.some(i => !i.description)) { setError('TÃ¼m kalemlere aÃ§Ä±klama girin'); return }
     setSaving(true)
     setError('')
 
@@ -73,9 +73,9 @@ export default function YeniFaturaPage() {
     }
     try {
       const data = await res.json()
-      setError(data.error || 'Kayıt hatası')
+      setError(data.error || 'KayÄ±t hatasÄ±')
     } catch {
-      setError('Sunucu hatası, tekrar deneyin')
+      setError('Sunucu hatasÄ±, tekrar deneyin')
     }
     setSaving(false)
   }
@@ -87,26 +87,26 @@ export default function YeniFaturaPage() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 24 }}>
         {/* Main form */}
         <div className="space-y-5">
-          {/* Müşteri Seçimi */}
+          {/* MÃ¼ÅŸteri SeÃ§imi */}
           <div className="rounded-2xl border p-6" style={{ background: '#fff', borderColor: '#e8edf8' }}>
-            <h2 className="font-semibold mb-4" style={{ fontSize: 15, color: '#0f172a' }}>Müşteri</h2>
+            <h2 className="font-semibold mb-4" style={{ fontSize: 15, color: '#0f172a' }}>MÃ¼ÅŸteri</h2>
             <select
               value={selectedClient?.id || ''}
               onChange={(e) => setSelectedClient(clients.find(c => c.id === e.target.value) || null)}
               className="w-full rounded-xl px-4 py-2.5 text-sm border focus:outline-none focus:ring-2"
               style={{ borderColor: '#e2e8f0', color: '#0f172a' }}
             >
-              <option value="">Müşteri seçin...</option>
+              <option value="">MÃ¼ÅŸteri seÃ§in...</option>
               {clients.map(c => (
-                <option key={c.id} value={c.id}>{c.name}{c.company ? ` — ${c.company}` : ''}</option>
+                <option key={c.id} value={c.id}>{c.name}{c.company ? ` â€” ${c.company}` : ''}</option>
               ))}
             </select>
             {selectedClient && (
               <div className="grid grid-cols-2 gap-3 mt-4 text-sm" style={{ color: '#64748b' }}>
-                {selectedClient.email && <div>📧 {selectedClient.email}</div>}
-                {selectedClient.tax_number && <div>🏢 VN: {selectedClient.tax_number}</div>}
-                {selectedClient.tax_office && <div>📋 {selectedClient.tax_office}</div>}
-                {selectedClient.city && <div>📍 {selectedClient.city}</div>}
+                {selectedClient.email && <div>ðŸ“§ {selectedClient.email}</div>}
+                {selectedClient.tax_number && <div>ðŸ¢ VN: {selectedClient.tax_number}</div>}
+                {selectedClient.tax_office && <div>ðŸ“‹ {selectedClient.tax_office}</div>}
+                {selectedClient.city && <div>ðŸ“ {selectedClient.city}</div>}
               </div>
             )}
           </div>
@@ -116,7 +116,7 @@ export default function YeniFaturaPage() {
             <h2 className="font-semibold mb-4" style={{ fontSize: 15, color: '#0f172a' }}>Kalemler</h2>
             {items.map((item, i) => (
               <div key={i} className="flex gap-3 mb-3 items-start flex-wrap">
-                <input value={item.description} onChange={(e) => updateItem(i, 'description', e.target.value)} placeholder="Açıklama"
+                <input value={item.description} onChange={(e) => updateItem(i, 'description', e.target.value)} placeholder="AÃ§Ä±klama"
                   className="flex-1 min-w-[160px] rounded-lg px-3 py-2 text-sm border" style={{ borderColor: '#e2e8f0' }} />
                 <input type="number" value={item.quantity} onChange={(e) => updateItem(i, 'quantity', e.target.value)} placeholder="Miktar"
                   className="w-20 rounded-lg px-3 py-2 text-sm border text-center" style={{ borderColor: '#e2e8f0' }} />
@@ -126,10 +126,10 @@ export default function YeniFaturaPage() {
                   className="w-28 rounded-lg px-3 py-2 text-sm border text-right" style={{ borderColor: '#e2e8f0' }} />
                 <input type="number" value={item.kdv_rate} onChange={(e) => updateItem(i, 'kdv_rate', e.target.value)} placeholder="KDV%"
                   className="w-20 rounded-lg px-3 py-2 text-sm border text-center" style={{ borderColor: '#e2e8f0' }} />
-                {items.length > 1 && <button onClick={() => removeItem(i)} className="text-red-400 text-lg">×</button>}
+                {items.length > 1 && <button onClick={() => removeItem(i)} className="text-red-400 text-lg">Ã—</button>}
               </div>
             ))}
-            <button onClick={addItem} className="text-sm font-medium mt-2" style={{ color: '#4f7dff' }}>+ Kalem Ekle</button>
+            <button onClick={addItem} className="text-sm font-medium mt-2" style={{ color: 'var(--brand-primary, #4f7dff)' }}>+ Kalem Ekle</button>
           </div>
 
           {/* Tarih & Not */}
@@ -141,7 +141,7 @@ export default function YeniFaturaPage() {
                   className="w-full rounded-xl px-4 py-2.5 text-sm border" style={{ borderColor: '#e2e8f0' }} />
               </div>
               <div>
-                <label className="block text-xs font-medium mb-1.5" style={{ color: '#64748b' }}>Son Ödeme</label>
+                <label className="block text-xs font-medium mb-1.5" style={{ color: '#64748b' }}>Son Ã–deme</label>
                 <input type="date" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })}
                   className="w-full rounded-xl px-4 py-2.5 text-sm border" style={{ borderColor: '#e2e8f0' }} />
               </div>
@@ -154,23 +154,23 @@ export default function YeniFaturaPage() {
           </div>
         </div>
 
-        {/* Sidebar - Özet */}
+        {/* Sidebar - Ã–zet */}
         <div>
           <div className="rounded-2xl border p-6 sticky" style={{ top: 24, background: '#fff', borderColor: '#e8edf8' }}>
-            <h2 className="font-semibold mb-4" style={{ fontSize: 15, color: '#0f172a' }}>Özet</h2>
+            <h2 className="font-semibold mb-4" style={{ fontSize: 15, color: '#0f172a' }}>Ã–zet</h2>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between" style={{ color: '#64748b' }}>
                 <span>Ara Toplam</span>
-                <span>₺{subtotal.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
+                <span>â‚º{subtotal.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
               </div>
               <div className="flex justify-between" style={{ color: '#64748b' }}>
                 <span>KDV (%20)</span>
-                <span>₺{kdvAmount.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
+                <span>â‚º{kdvAmount.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
               </div>
               <div className="border-t pt-2 mt-2" style={{ borderColor: '#e8edf8' }}>
                 <div className="flex justify-between font-bold" style={{ fontSize: 16, color: '#0f172a' }}>
                   <span>Toplam</span>
-                  <span>₺{total.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
+                  <span>â‚º{total.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
                 </div>
               </div>
             </div>
@@ -179,8 +179,8 @@ export default function YeniFaturaPage() {
 
             <button onClick={handleSave} disabled={saving}
               className="w-full mt-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-50"
-              style={{ background: 'linear-gradient(135deg, #4f7dff, #6a96ff)' }}>
-              {saving ? 'Kaydediliyor...' : 'Faturayı Kaydet'}
+              style={{ background: 'linear-gradient(135deg, var(--brand-primary, #4f7dff), var(--brand-primary-hover, #6a96ff))' }}>
+              {saving ? 'Kaydediliyor...' : 'FaturayÄ± Kaydet'}
             </button>
           </div>
         </div>

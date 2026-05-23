@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
@@ -25,7 +25,7 @@ export default function FaturaDetayPage() {
     }).catch(() => router.push('/dashboard/faturalar'))
   }, [id])
 
-  // e-Belge durumunu yükle
+  // e-Belge durumunu yÃ¼kle
   useEffect(() => {
     if (!id) return
     fetch(`/api/invoices/${id}/einvoice`).then(r => r.json()).then(data => {
@@ -33,7 +33,7 @@ export default function FaturaDetayPage() {
     }).catch(() => {})
   }, [id])
 
-  // Ödemeleri yükle
+  // Ã–demeleri yÃ¼kle
   useEffect(() => {
     if (!id) return
     const supabase = createClient()
@@ -45,7 +45,7 @@ export default function FaturaDetayPage() {
   const handleSend = async () => {
     setSending(true)
     const res = await fetch(`/api/invoices/${id}/send`, { method: 'POST' })
-    if (res.ok) setMsg('Fatura gönderildi!')
+    if (res.ok) setMsg('Fatura gÃ¶nderildi!')
     else { const d = await res.json(); setMsg(d.error || 'Hata') }
     setSending(false)
     setTimeout(() => setMsg(''), 3000)
@@ -53,26 +53,26 @@ export default function FaturaDetayPage() {
 
   const handlePDF = () => {
     setDownloading(true)
-    setMsg('PDF hazırlanıyor...')
+    setMsg('PDF hazÄ±rlanÄ±yor...')
     window.open(`/api/invoices/${id}/pdf`, '_blank')
     setTimeout(() => { setDownloading(false); setMsg('') }, 3000)
   }
 
   const handleEInvoiceSend = async () => {
     setESending(true)
-    setMsg('e-Belge gönderiliyor...')
+    setMsg('e-Belge gÃ¶nderiliyor...')
     try {
       const res = await fetch(`/api/invoices/${id}/einvoice`, { method: 'POST' })
       const data = await res.json()
       if (data.status && data.status !== 'error') {
-        setMsg('e-Belge gönderildi!')
+        setMsg('e-Belge gÃ¶nderildi!')
         setEDoc(data)
         setInvoice((i: Record<string, unknown> | null) => i ? { ...i, einvoice_status: data.status, einvoice_type: data.document_type } : null)
       } else {
-        setMsg(data.error || 'Gönderim hatası')
+        setMsg(data.error || 'GÃ¶nderim hatasÄ±')
       }
     } catch {
-      setMsg('e-Belge hatası')
+      setMsg('e-Belge hatasÄ±')
     }
     setESending(false)
     setTimeout(() => setMsg(''), 4000)
@@ -96,7 +96,7 @@ export default function FaturaDetayPage() {
     setInvoice(i => i ? { ...i, status } : null)
   }
 
-  if (loading) return <div style={{ textAlign: 'center', padding: 60, color: '#94a3b8' }}>Yükleniyor...</div>
+  if (loading) return <div style={{ textAlign: 'center', padding: 60, color: '#94a3b8' }}>YÃ¼kleniyor...</div>
   if (!invoice) return null
 
   const items = (invoice.items || []) as Array<Record<string, React.ReactNode>>
@@ -114,37 +114,37 @@ export default function FaturaDetayPage() {
           {msg && <span className="text-sm font-medium" style={{ color: msg.includes('hata') || msg.includes('Hata') ? '#ef4444' : '#10b981' }}>{msg}</span>}
           {stat === 'draft' && (
             <>
-              <button onClick={() => handleStatus('sent')} className="px-4 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: '#4f7dff' }}>Gönderildi İşaretle</button>
-              <button onClick={handlePDF} disabled={downloading} className="px-4 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: 'linear-gradient(135deg, #4f7dff, #6a96ff)' }}>
-                {downloading ? '⏳' : 'PDF İndir'}
+              <button onClick={() => handleStatus('sent')} className="px-4 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: 'var(--brand-primary, #4f7dff)' }}>GÃ¶nderildi Ä°ÅŸaretle</button>
+              <button onClick={handlePDF} disabled={downloading} className="px-4 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: 'linear-gradient(135deg, var(--brand-primary, #4f7dff), var(--brand-primary-hover, #6a96ff))' }}>
+                {downloading ? 'â³' : 'PDF Ä°ndir'}
               </button>
               <button onClick={handleSend} disabled={sending} className="px-4 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: '#10b981' }}>
-                {sending ? '⏳' : 'E-posta ile Gönder'}
+                {sending ? 'â³' : 'E-posta ile GÃ¶nder'}
               </button>
               {(!eDoc || eDoc.status === 'error') && (
                 <button onClick={handleEInvoiceSend} disabled={eSending} className="px-4 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: '#8b5cf6' }}>
-                  {eSending ? '⏳' : 'e-Belge Gönder'}
+                  {eSending ? 'â³' : 'e-Belge GÃ¶nder'}
                 </button>
               )}
             </>
           )}
           {stat === 'sent' && (
             <>
-              <button onClick={handlePDF} disabled={downloading} className="px-4 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: '#4f7dff' }}>PDF İndir</button>
-              <button onClick={() => handleStatus('paid')} className="px-4 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: '#10b981' }}>Ödendi İşaretle</button>
+              <button onClick={handlePDF} disabled={downloading} className="px-4 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: 'var(--brand-primary, #4f7dff)' }}>PDF Ä°ndir</button>
+              <button onClick={() => handleStatus('paid')} className="px-4 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: '#10b981' }}>Ã–dendi Ä°ÅŸaretle</button>
               {(!eDoc || eDoc.status === 'error') && (
                 <button onClick={handleEInvoiceSend} disabled={eSending} className="px-4 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: '#8b5cf6' }}>
-                  {eSending ? '⏳' : 'e-Belge Gönder'}
+                  {eSending ? 'â³' : 'e-Belge GÃ¶nder'}
                 </button>
               )}
             </>
           )}
           {stat === 'paid' && (
             <>
-              <button onClick={handlePDF} disabled={downloading} className="px-4 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: '#4f7dff' }}>PDF İndir</button>
+              <button onClick={handlePDF} disabled={downloading} className="px-4 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: 'var(--brand-primary, #4f7dff)' }}>PDF Ä°ndir</button>
               {(!eDoc || eDoc.status === 'error') && (
                 <button onClick={handleEInvoiceSend} disabled={eSending} className="px-4 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: '#8b5cf6' }}>
-                  {eSending ? '⏳' : 'e-Belge Gönder'}
+                  {eSending ? 'â³' : 'e-Belge GÃ¶nder'}
                 </button>
               )}
             </>
@@ -156,8 +156,8 @@ export default function FaturaDetayPage() {
       <div className="grid grid-cols-3 gap-4 mb-8">
         <div className="rounded-2xl border p-5" style={{ background: '#fff', borderColor: '#e8edf8' }}>
           <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4 }}>Durum</div>
-          <span style={{ fontSize: 14, fontWeight: 700, padding: '4px 12px', borderRadius: 100, background: stat === 'paid' ? '#ecfdf5' : stat === 'sent' ? '#eef2ff' : '#f1f5f9', color: stat === 'paid' ? '#10b981' : stat === 'sent' ? '#4f7dff' : '#64748b' }}>
-            {stat === 'paid' ? 'Ödendi' : stat === 'sent' ? 'Gönderildi' : stat === 'draft' ? 'Taslak' : stat}
+          <span style={{ fontSize: 14, fontWeight: 700, padding: '4px 12px', borderRadius: 100, background: stat === 'paid' ? '#ecfdf5' : stat === 'sent' ? '#eef2ff' : '#f1f5f9', color: stat === 'paid' ? '#10b981' : stat === 'sent' ? 'var(--brand-primary, #4f7dff)' : '#64748b' }}>
+            {stat === 'paid' ? 'Ã–dendi' : stat === 'sent' ? 'GÃ¶nderildi' : stat === 'draft' ? 'Taslak' : stat}
           </span>
         </div>
         <div className="rounded-2xl border p-5" style={{ background: '#fff', borderColor: '#e8edf8' }}>
@@ -170,26 +170,26 @@ export default function FaturaDetayPage() {
         </div>
       </div>
 
-      {/* e-Belge Kartı */}
+      {/* e-Belge KartÄ± */}
       {eDoc && eDoc.status && eDoc.status !== 'none' && (
         <div className="rounded-2xl border p-5 mb-8" style={{ background: '#fafbff', borderColor: '#dce5ff' }}>
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <span style={{ fontSize: 11, color: '#4f7dff', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>e-Belge</span>
+              <span style={{ fontSize: 11, color: 'var(--brand-primary, #4f7dff)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>e-Belge</span>
               <EBadge status={String(eDoc.status)} />
             </div>
             <div className="flex items-center gap-2">
               {(eDoc.status === 'sent' || eDoc.status === 'pending') && (
-                <button onClick={handleEInvoiceRefresh} disabled={eLoading} style={{ fontSize: 12, color: '#4f7dff', background: '#eef2ff', border: 'none', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontWeight: 500 }}>
-                  {eLoading ? '⏳' : 'Durumu Yenile'}
+                <button onClick={handleEInvoiceRefresh} disabled={eLoading} style={{ fontSize: 12, color: 'var(--brand-primary, #4f7dff)', background: '#eef2ff', border: 'none', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontWeight: 500 }}>
+                  {eLoading ? 'â³' : 'Durumu Yenile'}
                 </button>
               )}
             </div>
           </div>
           <div className="grid grid-cols-4 gap-4 text-sm">
             <div>
-              <div style={{ fontSize: 11, color: '#64748b', marginBottom: 2 }}>Belge Türü</div>
-              <div style={{ fontWeight: 600, color: '#0f172a' }}>{String(eDoc.document_type === 'e_fatura' ? 'e-Fatura' : 'e-Arşiv')}</div>
+              <div style={{ fontSize: 11, color: '#64748b', marginBottom: 2 }}>Belge TÃ¼rÃ¼</div>
+              <div style={{ fontWeight: 600, color: '#0f172a' }}>{String(eDoc.document_type === 'e_fatura' ? 'e-Fatura' : 'e-ArÅŸiv')}</div>
             </div>
             {eDoc.document_number && (
               <div>
@@ -213,12 +213,12 @@ export default function FaturaDetayPage() {
         </div>
       )}
 
-      {/* e-Belge henüz gönderilmemiş — bilgilendirme */}
+      {/* e-Belge henÃ¼z gÃ¶nderilmemiÅŸ â€” bilgilendirme */}
       {(!eDoc || eDoc.status === 'none' || eDoc.status === 'error') && (stat === 'sent' || stat === 'paid') && (
         <div className="rounded-2xl border p-4 mb-8" style={{ background: '#f8fafc', borderColor: '#e8edf8' }}>
           <div className="flex items-center gap-2" style={{ color: '#64748b', fontSize: 13 }}>
             <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-            Bu fatura henüz e-Belge olarak gönderilmedi. Yasal e-Fatura veya e-Arşiv olarak iletmek için &quot;e-Belge Gönder&quot; butonunu kullanın.
+            Bu fatura henÃ¼z e-Belge olarak gÃ¶nderilmedi. Yasal e-Fatura veya e-ArÅŸiv olarak iletmek iÃ§in &quot;e-Belge GÃ¶nder&quot; butonunu kullanÄ±n.
           </div>
         </div>
       )}
@@ -228,8 +228,8 @@ export default function FaturaDetayPage() {
         <table className="w-full">
           <thead style={{ background: '#f8fafc', borderBottom: '1px solid #e8edf8' }}>
             <tr>
-              {['Açıklama', 'Miktar', 'Birim Fiyat', 'KDV', 'Tutar'].map(h => (
-                <th key={h} style={{ padding: '10px 20px', textAlign: h === 'Açıklama' ? 'left' : 'right', fontSize: 11, fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>{h}</th>
+              {['AÃ§Ä±klama', 'Miktar', 'Birim Fiyat', 'KDV', 'Tutar'].map(h => (
+                <th key={h} style={{ padding: '10px 20px', textAlign: h === 'AÃ§Ä±klama' ? 'left' : 'right', fontSize: 11, fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -247,10 +247,10 @@ export default function FaturaDetayPage() {
         </table>
       </div>
 
-      {/* Ödemeler */}
+      {/* Ã–demeler */}
       {payments.length > 0 && (
         <div className="rounded-2xl border p-6 mb-8" style={{ background: '#fff', borderColor: '#e8edf8' }}>
-          <h2 className="font-semibold mb-4" style={{ fontSize: 15, color: '#0f172a' }}>Ödemeler</h2>
+          <h2 className="font-semibold mb-4" style={{ fontSize: 15, color: '#0f172a' }}>Ã–demeler</h2>
           <div className="space-y-3">
             {payments.map((p) => {
               const pStatus = String(p.status)
@@ -258,10 +258,10 @@ export default function FaturaDetayPage() {
               return (
                 <div key={String(p.id)} className="flex items-center justify-between py-2 px-3 rounded-xl" style={{ background: isSuccess ? '#ecfdf5' : '#f8fafc' }}>
                   <div className="flex items-center gap-3">
-                    <span style={{ fontSize: 18 }}>{isSuccess ? '✅' : pStatus === 'failed' ? '❌' : '⏳'}</span>
+                    <span style={{ fontSize: 18 }}>{isSuccess ? 'âœ…' : pStatus === 'failed' ? 'âŒ' : 'â³'}</span>
                     <div>
                       <div style={{ fontSize: 13, fontWeight: 600, color: '#0f172a' }}>
-                        ₺{Number(p.amount).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
+                        â‚º{Number(p.amount).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                       </div>
                       <div style={{ fontSize: 11, color: '#94a3b8' }}>
                         {new Date(p.created_at as string).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
@@ -270,7 +270,7 @@ export default function FaturaDetayPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span style={{ fontSize: 12, padding: '3px 10px', borderRadius: 100, background: isSuccess ? '#ecfdf5' : '#f1f5f9', color: isSuccess ? '#10b981' : '#64748b', fontWeight: 600 }}>
-                      {isSuccess ? 'Başarılı' : pStatus === 'failed' ? 'Başarısız' : 'Bekliyor'}
+                      {isSuccess ? 'BaÅŸarÄ±lÄ±' : pStatus === 'failed' ? 'BaÅŸarÄ±sÄ±z' : 'Bekliyor'}
                     </span>
                     {!!(p.provider_payment_id) && (
                       <span style={{ fontSize: 11, color: '#94a3b8', fontFamily: 'monospace' }}>
@@ -287,12 +287,12 @@ export default function FaturaDetayPage() {
 
       {/* Client Info */}
       <div className="rounded-2xl border p-6" style={{ background: '#fff', borderColor: '#e8edf8' }}>
-        <h2 className="font-semibold mb-3" style={{ fontSize: 15, color: '#0f172a' }}>Müşteri Bilgileri</h2>
+        <h2 className="font-semibold mb-3" style={{ fontSize: 15, color: '#0f172a' }}>MÃ¼ÅŸteri Bilgileri</h2>
         <div className="grid grid-cols-2 gap-3 text-sm" style={{ color: '#64748b' }}>
-          <div>👤 {String(it.client_name)}{String(it.client_company || '')}</div>
-          {String(it.client_email) && <div>📧 {String(it.client_email)}</div>}
-          {String(it.client_tax_number) && <div>🏢 Vergi No: {String(it.client_tax_number)}</div>}
-          {String(it.client_tax_office) && <div>📋 {String(it.client_tax_office)}</div>}
+          <div>ðŸ‘¤ {String(it.client_name)}{String(it.client_company || '')}</div>
+          {String(it.client_email) && <div>ðŸ“§ {String(it.client_email)}</div>}
+          {String(it.client_tax_number) && <div>ðŸ¢ Vergi No: {String(it.client_tax_number)}</div>}
+          {String(it.client_tax_office) && <div>ðŸ“‹ {String(it.client_tax_office)}</div>}
         </div>
       </div>
     </div>
@@ -301,12 +301,12 @@ export default function FaturaDetayPage() {
 
 const eBadgeStyle: Record<string, { bg: string; color: string; label: string }> = {
   pending:   { bg: '#fef3c7', color: '#d97706', label: 'Bekliyor' },
-  queued:    { bg: '#fef3c7', color: '#d97706', label: 'Sırada' },
-  sent:      { bg: '#eef2ff', color: '#4f7dff', label: 'Gönderildi' },
+  queued:    { bg: '#fef3c7', color: '#d97706', label: 'SÄ±rada' },
+  sent:      { bg: '#eef2ff', color: 'var(--brand-primary, #4f7dff)', label: 'GÃ¶nderildi' },
   accepted:  { bg: '#ecfdf5', color: '#10b981', label: 'Kabul Edildi' },
   rejected:  { bg: '#fef2f2', color: '#ef4444', label: 'Reddedildi' },
   error:     { bg: '#fef2f2', color: '#dc2626', label: 'Hata' },
-  cancelled: { bg: '#f1f5f9', color: '#94a3b8', label: 'İptal Edildi' },
+  cancelled: { bg: '#f1f5f9', color: '#94a3b8', label: 'Ä°ptal Edildi' },
 }
 
 function EBadge({ status }: { status: string }) {

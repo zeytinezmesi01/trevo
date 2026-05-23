@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 
@@ -24,7 +24,7 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: Array<
       }}
     >
       <div style={{ fontWeight: 600, marginBottom: '4px' }}>{d.label} {d.year}</div>
-      <div style={{ color: '#7aa0ff' }}>{formatTRY(d.total)}</div>
+      <div style={{ color: 'var(--brand-primary-hover, #7aa0ff)' }}>{formatTRY(d.total)}</div>
     </div>
   )
 }
@@ -49,7 +49,7 @@ export default function RevenueChart({ data }: { data: Bucket[] }) {
         <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(79,125,255,0.06)' }} />
         <Bar dataKey="total" radius={[6, 6, 6, 6]} barSize={32}>
           {data.map((entry, i) => (
-            <Cell key={i} fill={entry.total > 0 ? '#4f7dff' : '#e8edf8'} />
+            <Cell key={i} fill={entry.total > 0 ? 'var(--brand-primary, #4f7dff)' : '#e8edf8'} />
           ))}
         </Bar>
       </BarChart>

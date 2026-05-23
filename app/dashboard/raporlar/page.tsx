@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+﻿import { createClient } from '@/lib/supabase/server'
 import { getTenantContext } from '@/lib/tenant/auth'
 import RevenueChart from './revenue-chart'
 
@@ -24,7 +24,7 @@ export default async function RaporlarPage() {
   const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]
   const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1).toISOString().split('T')[0]
 
-  // ── Parallel Supabase queries ──
+  // â”€â”€ Parallel Supabase queries â”€â”€
   const [
     { data: paidMonth },
     { data: open },
@@ -59,7 +59,7 @@ export default async function RaporlarPage() {
       .eq('tenant_id', tenantId).eq('status', 'paid'),
   ])
 
-  // ── Metric calculations ──
+  // â”€â”€ Metric calculations â”€â”€
   const monthRevenue = paidMonth?.reduce((s, r) => s + (r.total || 0), 0) || 0
   const openCount = open?.length || 0
   const openTotal = open?.reduce((s, r) => s + (r.total || 0), 0) || 0
@@ -75,7 +75,7 @@ export default async function RaporlarPage() {
     }
   })
 
-  // ── Monthly buckets for last 6 months ──
+  // â”€â”€ Monthly buckets for last 6 months â”€â”€
   const buckets: MonthlyBucket[] = []
   for (let i = 5; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
@@ -93,7 +93,7 @@ export default async function RaporlarPage() {
     if (b) b.total += r.total || 0
   })
 
-  // ── Top 5 customers (lifetime paid) ──
+  // â”€â”€ Top 5 customers (lifetime paid) â”€â”€
   const clientMap = new Map<string, string>()
   clientList?.forEach((c) => clientMap.set(c.id, c.name))
 
@@ -106,9 +106,9 @@ export default async function RaporlarPage() {
   const top5: TopClient[] = Array.from(revByClient.entries())
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
-    .map(([id, total]) => ({ id, name: clientMap.get(id) || '—', total }))
+    .map(([id, total]) => ({ id, name: clientMap.get(id) || 'â€”', total }))
 
-  // ── Stat card definitions ──
+  // â”€â”€ Stat card definitions â”€â”€
   const stats = [
     {
       label: 'Bu Ay Gelir', value: formatTRY(monthRevenue),
@@ -116,15 +116,15 @@ export default async function RaporlarPage() {
       icon: <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 14h-2v-2h2zm0-4h-2V7h2z" />,
     },
     {
-      label: 'Açık Fatura', value: `${openCount} adet`,
+      label: 'AÃ§Ä±k Fatura', value: `${openCount} adet`,
       sub: formatTRY(openTotal),
       iconBg: '#fef3c7', iconColor: '#f59e0b',
       icon: <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />,
     },
     {
-      label: 'Müşteri', value: `${clientCount ?? 0}`,
-      sub: 'Toplam kayıtlı',
-      iconBg: '#eef2ff', iconColor: '#4f7dff',
+      label: 'MÃ¼ÅŸteri', value: `${clientCount ?? 0}`,
+      sub: 'Toplam kayÄ±tlÄ±',
+      iconBg: '#eef2ff', iconColor: 'var(--brand-primary, #4f7dff)',
       icon: <g><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></g>,
     },
     {
@@ -145,7 +145,7 @@ export default async function RaporlarPage() {
           Raporlama Paneli
         </div>
         <div style={{ fontSize: '13.5px', color: '#64748b', marginTop: '4px' }}>
-          Gelir, açık faturalar ve müşteri istatistikleri
+          Gelir, aÃ§Ä±k faturalar ve mÃ¼ÅŸteri istatistikleri
         </div>
       </div>
 
@@ -177,7 +177,7 @@ export default async function RaporlarPage() {
             <RevenueChart data={buckets} />
           ) : (
             <div style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '14px' }}>
-              Bu döneme ait ödenmiş fatura bulunamadı.
+              Bu dÃ¶neme ait Ã¶denmiÅŸ fatura bulunamadÄ±.
             </div>
           )}
         </div>
@@ -186,11 +186,11 @@ export default async function RaporlarPage() {
       {/* Top 5 Customers */}
       <div>
         <div style={{ fontFamily: 'var(--font-display), Plus Jakarta Sans, sans-serif', fontSize: '15px', fontWeight: 700, color: '#0f172a', marginBottom: '12px' }}>
-          En Çok Gelir Getiren 5 Müşteri
+          En Ã‡ok Gelir Getiren 5 MÃ¼ÅŸteri
         </div>
         {top5.length === 0 ? (
           <div style={{ ...card, padding: '32px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>
-            Henüz ödenmiş fatura bulunmamaktadır.
+            HenÃ¼z Ã¶denmiÅŸ fatura bulunmamaktadÄ±r.
           </div>
         ) : (
           <div style={{ ...card, overflow: 'hidden' }}>
@@ -198,7 +198,7 @@ export default async function RaporlarPage() {
               <thead>
                 <tr>
                   <th style={{ fontSize: '11.5px', fontWeight: 600, letterSpacing: '0.05em', color: '#64748b', textTransform: 'uppercase', padding: '12px 20px', textAlign: 'left', background: '#fafbff', borderBottom: '1px solid #e8edf8' }}>#</th>
-                  <th style={{ fontSize: '11.5px', fontWeight: 600, letterSpacing: '0.05em', color: '#64748b', textTransform: 'uppercase', padding: '12px 20px', textAlign: 'left', background: '#fafbff', borderBottom: '1px solid #e8edf8' }}>Müşteri</th>
+                  <th style={{ fontSize: '11.5px', fontWeight: 600, letterSpacing: '0.05em', color: '#64748b', textTransform: 'uppercase', padding: '12px 20px', textAlign: 'left', background: '#fafbff', borderBottom: '1px solid #e8edf8' }}>MÃ¼ÅŸteri</th>
                   <th style={{ fontSize: '11.5px', fontWeight: 600, letterSpacing: '0.05em', color: '#64748b', textTransform: 'uppercase', padding: '12px 20px', textAlign: 'right', background: '#fafbff', borderBottom: '1px solid #e8edf8' }}>Toplam Gelir</th>
                 </tr>
               </thead>
@@ -212,7 +212,7 @@ export default async function RaporlarPage() {
                                    i === 1 ? 'linear-gradient(135deg, #94a3b8, #cbd5e1)' :
                                    i === 2 ? 'linear-gradient(135deg, #d97706, #f59e0b)' :
                                    '#eef2ff',
-                        color: i <= 2 ? '#fff' : '#4f7dff',
+                        color: i <= 2 ? '#fff' : 'var(--brand-primary, #4f7dff)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         fontFamily: 'var(--font-display), Plus Jakarta Sans, sans-serif',
                         fontWeight: 700, fontSize: '13px',
