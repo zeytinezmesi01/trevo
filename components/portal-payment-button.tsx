@@ -3,7 +3,16 @@
 import { useState } from 'react'
 
 function sanitizeFormHtml(html: string): string {
-  return html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+  return html
+    // script etiketleri
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    // tehlikeli etiketler
+    .replace(/<(iframe|object|embed|applet|meta|link|base)\b[^>]*>/gi, '')
+    // inline event handler'lar (onerror, onload, onclick vb.)
+    .replace(/\s+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, '')
+    // javascript: ve data: URL'leri
+    .replace(/(href|src|action|formaction)\s*=\s*(?:"javascript:[^"]*"|'javascript:[^']*')/gi, '$1=""')
+    .replace(/(href|src|action|formaction)\s*=\s*(?:"data:[^"]*"|'data:[^']*')/gi, '$1=""')
 }
 
 export default function PortalPaymentButton({

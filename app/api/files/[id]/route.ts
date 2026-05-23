@@ -3,7 +3,7 @@ import { DeleteObjectCommand } from '@aws-sdk/client-s3'
 import { getTenantContext } from '@/lib/tenant/auth'
 import { createClient } from '@/lib/supabase/server'
 import { canUploadFiles } from '@/lib/tenant/permissions'
-import { r2Client, R2_BUCKET, R2_PUBLIC_URL } from '@/lib/r2/client'
+import { getR2Client, getR2Bucket, R2_PUBLIC_URL } from '@/lib/r2/client'
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const ctx = await getTenantContext()
@@ -34,7 +34,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   for (const url of urls) {
     const key = url.replace(`${R2_PUBLIC_URL}/`, '')
     if (key && !key.includes('..')) {
-      await r2Client.send(new DeleteObjectCommand({ Bucket: R2_BUCKET, Key: key })).catch(() => {})
+      await getR2Client().send(new DeleteObjectCommand({ Bucket: getR2Bucket(), Key: key })).catch(() => {})
     }
   }
 

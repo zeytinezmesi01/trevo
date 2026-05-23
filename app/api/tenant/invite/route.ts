@@ -4,6 +4,7 @@ import { getTenantContext } from '@/lib/tenant/auth'
 import { createClient } from '@/lib/supabase/server'
 import { canInviteMembers } from '@/lib/tenant/permissions'
 import { sendTeamInvitation } from '@/lib/email'
+import { isValidEmail } from '@/lib/validation'
 
 export async function POST(request: Request) {
   const ctx = await getTenantContext()
@@ -13,6 +14,10 @@ export async function POST(request: Request) {
 
   const { email, role } = await request.json()
   if (!email) return NextResponse.json({ error: 'E-posta gerekli' }, { status: 400 })
+  // O-15: e-posta formatı
+  if (!isValidEmail(email)) {
+    return NextResponse.json({ error: 'Geçersiz e-posta' }, { status: 400 })
+  }
 
   // Rol doğrulama: owner rolüyle davet edilemez
   const allowedRoles = ['admin', 'member', 'viewer']

@@ -10,7 +10,16 @@ export default function PortalFaturaTalep({ token }: { token: string }) {
   const [error, setError] = useState('')
 
   const handleSubmit = async () => {
-    if (!form.amount) { setError('Tutar giriniz'); return }
+    // O-40: tutar validasyonu
+    const amount = parseFloat(form.amount)
+    if (!form.amount || isNaN(amount) || amount <= 0) {
+      setError('Geçerli bir tutar giriniz')
+      return
+    }
+    if (amount > 1_000_000) {
+      setError('Tutar çok yüksek')
+      return
+    }
     setSending(true)
     setError('')
     const res = await fetch('/api/invoices/request', {
@@ -59,6 +68,7 @@ export default function PortalFaturaTalep({ token }: { token: string }) {
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Tutar (₺) *</label>
                 <input type="number" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })}
+                  min="0.01" step="0.01" max="1000000"
                   className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                   placeholder="2500" />
               </div>

@@ -68,7 +68,30 @@
       "Bash(Start-Sleep -Seconds 8)",
       "Bash(Get-Content \"C:\\\\Users\\\\User1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-User1-Desktop-trevo\\\\09b5b023-cea7-441e-8d20-418a613c4b61\\\\tasks\\\\b4m82wr01.output\")",
       "PowerShell(npm run *)",
-      "PowerShell(Stop-Process *)"
+      "PowerShell(Stop-Process *)",
+      "Bash(git checkout *)",
+      "Bash(git commit *)",
+      "Bash(npx supabase *)",
+      "Bash(nslookup -type=SOA kartivizitim.xyz)",
+      "Bash(nslookup kartivizitim.xyz)",
+      "Bash(whois kartivizitim.xyz)",
+      "WebFetch(domain:www.whois.com)",
+      "WebFetch(domain:rdap.centralnic.com)",
+      "Bash(nslookup -type=TXT _trevo-verify.kartivizitim.xyz tr.dnsenable.com)",
+      "Bash(nslookup -type=CNAME kartivizitim.xyz tr.dnsenable.com)",
+      "Bash(nslookup kartivizitim.xyz tr.dnsenable.com)",
+      "Bash(nslookup -type=NS kartivizitim.xyz tr.dnsenable.com)",
+      "Bash(nslookup *)",
+      "WebFetch(domain:dns.google)",
+      "PowerShell(git add *)",
+      "PowerShell(git push *)",
+      "WebFetch(domain:kartivizitim.xyz)",
+      "WebFetch(domain:api.vercel.com)",
+      "PowerShell(New-Item *)",
+      "PowerShell(git *)",
+      "Bash(Select-Object -Last 5)",
+      "Bash(Select-String -Pattern \"r2|invite\")",
+      "Bash(echo \"EXIT: $?\")"
     ]
   }
 }

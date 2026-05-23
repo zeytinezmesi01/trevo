@@ -1,6 +1,6 @@
 import { PutObjectCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
-import { r2Client, R2_BUCKET, R2_PUBLIC_URL } from '@/lib/r2/client'
+import { getR2Client, getR2Bucket, R2_PUBLIC_URL } from '@/lib/r2/client'
 import { createClient } from '@/lib/supabase/server'
 import { getTenantContext } from '@/lib/tenant/auth'
 import { canUploadFiles } from '@/lib/tenant/permissions'
@@ -63,9 +63,9 @@ export async function POST(request: Request) {
   const key = `${ctx.tenantId}/${folder}/${safeName}`
 
   const signedUrl = await getSignedUrl(
-    r2Client,
+    getR2Client(),
     new PutObjectCommand({
-      Bucket: R2_BUCKET,
+      Bucket: getR2Bucket(),
       Key: key,
       ContentType: fileType,
     }),

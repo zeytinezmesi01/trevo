@@ -35,6 +35,15 @@ listesi. Bu dosya commit/push EDİLMEZ (bkz. CLAUDE.md).
 
 ## Ürün / UX
 
+### Çoklu tenant desteği
+- **Ne:** Aynı kullanıcı birden fazla tenant'a üye olabilsin.
+- **Nasıl:** `profiles.tenant_id` kaldırılıp sadece `tenant_members` üzerinden
+  tenant bağlantısı kurulacak. Kullanıcı dashboard'da tenant seçimi yapabilir.
+  `auth_tenant_id()` RLS fonksiyonu aktif tenant'a göre çalışır.
+- **Neden:** Kendi ajansı olan biri, başka bir ajansın custom domain'inden
+  üye olursa ikinci tenant'a geçemiyor. Şu an 1 kullanıcı = 1 tenant.
+- **Öncelik:** Orta.
+
 ### Faturalı müşteri için soft-delete
 - **Ne:** Bağlı faturası olan müşteri şu an silinemiyor (FK kısıtı → 409).
 - **Nasıl:** Gerçek silme yerine "pasife alma" — örn. `clients.is_active`
@@ -42,3 +51,20 @@ listesi. Bu dosya commit/push EDİLMEZ (bkz. CLAUDE.md).
 - **Neden:** Faturalar muhasebe kaydıdır, silinemez; ama kullanıcı müşteriyi
   listeden kaldırmak isteyebilir.
 - **Öncelik:** Orta — kullanıcı talebine göre.
+
+### Rol bazlı yetki özelleştirme (Anayetkili)
+- **Ne:** Owner, her rol için (admin/member/viewer) hangi dashboard menülerinin
+  görüneceğini özelleştirebilsin.
+- **Nasıl:** `role_permissions` tablosu (tenant_id, role, menu_key, enabled).
+  Sidebar bu tablodan okur. Ayarlar sayfasında owner için rol yetki matrix'i.
+- **Neden:** Farklı işletmeler farklı rol ihtiyaçlarına sahip. Şu an roller
+  sabit kodlu.
+- **Öncelik:** Orta.
+
+### R2 CORS otomasyonu
+- **Ne:** Yeni custom domain eklenince R2 bucket CORS'a otomatik eklensin.
+- **Nasıl:** Cloudflare API ile `AllowedOrigins` güncellenir. Domain verify
+  endpoint'ine eklenebilir.
+- **Neden:** Şu an manuel — her domain için R2 dashboard'a gidip eklemek
+  gerekiyor. Unutulursa dosya yükleme kırılır.
+- **Öncelik:** Düşük — custom domain sayısı artınca önem kazanır.

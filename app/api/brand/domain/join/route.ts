@@ -9,16 +9,31 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
   }
 
-  const body = await request.json().catch(() => null)
-  const tenantId = body?.tenant_id as string | undefined
+  // Tenant'i body'den DEĞIL, request host'undan türet.
+  // Sadece brand_domain_status === 'active' olan domain'ler kabul edilir.
+  const host = request.headers.get('host') || ''
+  const domain = host.replace(/:\d+$/, '').replace(/^www\./, '').toLowerCase()
 
-  if (!tenantId) {
-    return NextResponse.json({ error: 'Domain bilgisi eksik' }, { status: 400 })
+  if (!domain) {
+    return NextResponse.json({ error: 'Domain bilgisi alınamadı' }, { status: 400 })
   }
 
   const admin = createAdminClient()
 
-  // Domain sahibinin tenant'ini bul
+  // Domain sahibini bul (yalnızca aktif/doğrulanmış domain'ler).
+  const { data: ownerProfile } = await admin
+    .from('profiles')
+    .select('tenant_id, brand_domain_status')
+    .eq('brand_domain', domain)
+    .eq('role', 'owner')
+    .maybeSingle()
+
+  if (!ownerProfile || ownerProfile.brand_domain_status !== 'active') {
+    return NextResponse.json({ error: 'Doğrulanmış bir işletme domaini bulunamadı' }, { status: 404 })
+  }
+
+  const tenantId = ownerProfile.tenant_id as string
+
   const { data: tenant } = await admin
     .from('tenants')
     .select('id, name')

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 const SKIP_KEY = 'trevo_onboarding_skipped'
@@ -25,6 +26,9 @@ export default function OnboardingModal() {
   })
 
   const supabase = createClient()
+  const router = useRouter()
+  // O-35: inline hata mesajı
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   useEffect(() => {
     (async () => {
@@ -84,19 +88,29 @@ export default function OnboardingModal() {
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
-        alert(data.error || 'Kaydetme hatası')
+        setErrorMsg(data.error || 'Kaydetme hatası')
         setSaving(false)
         return
       }
     } catch {
-      alert('Bağlantı hatası')
+      setErrorMsg('Bağlantı hatası')
       setSaving(false)
       return
     }
     setSaving(false)
     setShow(false)
-    window.location.reload()
+    // O-38: window.location.reload() yerine router.refresh()
+    router.refresh()
   }
+
+  // O-41: Escape ile kapatma + erişilebilirlik
+  useEffect(() => {
+    if (!show) return
+    const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') handleSkip() }
+    window.addEventListener('keydown', handleEsc)
+    return () => window.removeEventListener('keydown', handleEsc)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [show])
 
   if (!show) return null
 
@@ -106,10 +120,14 @@ export default function OnboardingModal() {
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="onboarding-title"
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ background: 'rgba(15,23,42,0.55)' }}
     >
       <div className="bg-white rounded-2xl w-full max-w-md flex flex-col" style={{ maxHeight: '90vh' }}>
+        <h2 id="onboarding-title" className="sr-only">Trevo Onboarding</h2>
         {/* Step indicator */}
         <div className="px-6 pt-6 pb-3">
           <div className="flex items-center gap-1.5">
@@ -158,7 +176,10 @@ export default function OnboardingModal() {
                   <label className="block text-xs font-medium text-gray-600 mb-1">Vergi numarası *</label>
                   <input
                     value={form.company_tax_number}
-                    onChange={(e) => setForm({ ...form, company_tax_number: e.target.value })}
+                    onChange={(e) => setForm({ ...form, company_tax_number: e.target.value.replace(/\D/g, '').slice(0, 11) })}
+                    maxLength={11}
+                    pattern="\d{10,11}"
+                    inputMode="numeric"
                     className={inputCls}
                     placeholder="10 haneli VKN"
                   />
@@ -244,6 +265,10 @@ export default function OnboardingModal() {
             </div>
           )}
         </div>
+
+        {errorMsg && (
+          <div className="px-6 py-2 text-xs text-red-600 border-t border-red-100 bg-red-50">{errorMsg}</div>
+        )}
 
         <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between gap-3">
           <button onClick={handleSkip} className="text-xs text-gray-400 hover:text-gray-600 transition-colors">

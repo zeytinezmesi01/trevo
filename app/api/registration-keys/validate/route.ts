@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import crypto from 'node:crypto'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { rateLimit } from '@/lib/rate-limit'
 
@@ -15,10 +16,13 @@ export async function POST(request: Request) {
   const { key, email } = body
   const admin = createAdminClient()
 
+  // Y-16: DB'de hash saklanır; raw key gelir, hash'leyip karşılaştırırız
+  const keyHash = crypto.createHash('sha256').update(key).digest('hex')
+
   const { data } = await admin
     .from('registration_keys')
     .select('id, tenant_id, email, role, used_at, expires_at')
-    .eq('key', key)
+    .eq('key', keyHash)
     .maybeSingle()
 
   if (!data) {

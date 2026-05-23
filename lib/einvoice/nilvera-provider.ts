@@ -45,6 +45,16 @@ export class NilveraEInvoiceProvider implements EInvoiceProvider {
     this.apiKey = apiKey
   }
 
+  // O-9: path injection korumalari
+  private validateVkn(vkn: string): string {
+    if (!/^\d{10,11}$/.test(vkn)) throw new Error('Geçersiz VKN formatı')
+    return vkn
+  }
+  private validateDocId(id: string): string {
+    if (!/^[a-zA-Z0-9_-]+$/.test(id)) throw new Error('Geçersiz belge ID formatı')
+    return id
+  }
+
   private async request<T>(
     method: string,
     path: string,
@@ -93,7 +103,7 @@ export class NilveraEInvoiceProvider implements EInvoiceProvider {
       isEInvoiceUser?: boolean
       name?: string
       alias?: string
-    }>('GET', `/v1/taxpayers/${vkn}`)
+    }>('GET', `/v1/taxpayers/${this.validateVkn(vkn)}`)
 
     return {
       isEInvoiceUser: data.isEInvoiceUser ?? false,
@@ -154,7 +164,7 @@ export class NilveraEInvoiceProvider implements EInvoiceProvider {
       gibResponse?: Record<string, unknown>
       pdfUrl?: string
       xmlUrl?: string
-    }>('GET', `/v1/documents/${integratorDocId}/status`)
+    }>('GET', `/v1/documents/${this.validateDocId(integratorDocId)}/status`)
 
     return {
       status: this.mapStatus(data.status),
@@ -166,14 +176,14 @@ export class NilveraEInvoiceProvider implements EInvoiceProvider {
 
   async getDocumentPdf(integratorDocId: string): Promise<Buffer> {
     // TODO: bayi dokümanından endpoint'i doğrula
-    return this.requestBuffer('GET', `/v1/documents/${integratorDocId}/pdf`)
+    return this.requestBuffer('GET', `/v1/documents/${this.validateDocId(integratorDocId)}/pdf`)
   }
 
   async cancelDocument(integratorDocId: string, reason?: string): Promise<EInvoiceStatus> {
     // TODO: bayi dokümanından endpoint'i doğrula
     const data = await this.request<{ status: string }>(
       'POST',
-      `/v1/documents/${integratorDocId}/cancel`,
+      `/v1/documents/${this.validateDocId(integratorDocId)}/cancel`,
       { reason: reason || '' },
     )
 

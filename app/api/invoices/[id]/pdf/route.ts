@@ -4,7 +4,7 @@ import { GetObjectCommand } from '@aws-sdk/client-s3'
 import { getTenantContext } from '@/lib/tenant/auth'
 import { generateAndStoreInvoicePDF } from '@/lib/pdf/generate-invoice'
 import { createClient } from '@/lib/supabase/server'
-import { r2Client, R2_BUCKET, R2_PUBLIC_URL } from '@/lib/r2/client'
+import { getR2Client, getR2Bucket, R2_PUBLIC_URL } from '@/lib/r2/client'
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const ctx = await getTenantContext()
@@ -33,7 +33,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   if (!pdfUrl) return NextResponse.json({ error: 'PDF oluşturulamadı' }, { status: 500 })
 
   const key = pdfUrl.replace(`${R2_PUBLIC_URL}/`, '')
-  const obj = await r2Client.send(new GetObjectCommand({ Bucket: R2_BUCKET, Key: key }))
+  const obj = await getR2Client().send(new GetObjectCommand({ Bucket: getR2Bucket(), Key: key }))
   if (!obj.Body) return NextResponse.json({ error: 'PDF bulunamadı' }, { status: 404 })
 
   const bytes = await obj.Body.transformToByteArray()

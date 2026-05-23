@@ -60,6 +60,8 @@ export async function proxy(request: NextRequest) {
 
     if (profile) {
       supabaseResponse.headers.set('x-brand-profile-id', profile.id as string)
+      // O-10: httpOnly=false bilinçli — lib/brand/client.ts client-side okur (readBrandFromCookie).
+      // Cookie içerikleri yalnızca brand kimlikleri olduğundan XSS risk seviyesi düşük.
       supabaseResponse.cookies.set('brand_profile_id', profile.id as string, {
         httpOnly: false,
         secure: true,

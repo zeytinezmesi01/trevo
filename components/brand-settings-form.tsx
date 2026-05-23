@@ -43,6 +43,12 @@ export default function BrandSettingsForm() {
   const [showVerifyCard, setShowVerifyCard] = useState(false)
   const [vercelMsg, setVercelMsg] = useState<string | null>(null)
   const [vercelConfigured, setVercelConfigured] = useState(false)
+  // O-35: alert() yerine inline mesaj
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const showError = (text: string) => {
+    setErrorMsg(text)
+    setTimeout(() => setErrorMsg(null), 4000)
+  }
 
   useEffect(() => {
     const load = async () => {
@@ -84,7 +90,7 @@ export default function BrandSettingsForm() {
 
     const { signedUrl, publicUrl, error } = await res.json()
     if (error || !signedUrl) {
-      alert('Logo yükleme hatası: ' + (error || 'Bilinmeyen hata'))
+      showError('Logo yükleme hatası: ' + (error || 'Bilinmeyen hata'))
       setUploading(false)
       setUploadProgress('')
       return
@@ -94,7 +100,7 @@ export default function BrandSettingsForm() {
     const uploadRes = await fetch(signedUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } })
 
     if (!uploadRes.ok) {
-      alert('Logo yükleme hatası')
+      showError('Logo yükleme hatası')
       setUploading(false)
       setUploadProgress('')
       return
@@ -123,16 +129,16 @@ export default function BrandSettingsForm() {
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
         if (data.fields) {
-          alert('Doğrulama hatası:\n\n' + Object.values(data.fields).join('\n'))
+          showError('Doğrulama hatası: ' + Object.values(data.fields).join(' / '))
         } else {
-          alert(data.error || 'Kaydetme hatası')
+          showError(data.error || 'Kaydetme hatası')
         }
         return
       }
       setSuccess(true)
       setTimeout(() => setSuccess(false), 3000)
     } catch {
-      alert('Bağlantı hatası — kaydedilemedi.')
+      showError('Bağlantı hatası — kaydedilemedi.')
     } finally {
       setSaving(false)
     }
@@ -140,7 +146,7 @@ export default function BrandSettingsForm() {
 
   const handleStartVerify = async () => {
     if (!form.brand_domain) {
-      alert('Lütfen önce bir domain girin.')
+      showError('Lütfen önce bir domain girin.')
       return
     }
     setVerifying(true)
@@ -152,7 +158,7 @@ export default function BrandSettingsForm() {
       })
       const data: DomainVerifyResponse & { error?: string } = await res.json()
       if (!res.ok) {
-        alert(data.error || 'Doğrulama başlatılamadı')
+        showError(data.error || 'Doğrulama başlatılamadı')
         return
       }
       setDomainStatus('pending')
@@ -162,7 +168,7 @@ export default function BrandSettingsForm() {
       setVercelMsg(data.vercel?.ok ? null : data.vercel?.error || 'Vercel API yapılandırılmamış')
       setVercelConfigured(false)
     } catch {
-      alert('Bağlantı hatası — doğrulama başlatılamadı.')
+      showError('Bağlantı hatası — doğrulama başlatılamadı.')
     } finally {
       setVerifying(false)
     }
@@ -174,14 +180,14 @@ export default function BrandSettingsForm() {
       const res = await fetch('/api/brand/domain/check', { method: 'POST' })
       const data: DomainCheckResponse & { error?: string } = await res.json()
       if (!res.ok) {
-        alert(data.error || 'Kontrol yapılamadı')
+        showError(data.error || 'Kontrol yapılamadı')
         return
       }
       setDomainStatus(data.status)
       setDomainError(data.error)
       setVercelConfigured(data.vercelConfigured)
     } catch {
-      alert('Bağlantı hatası — kontrol yapılamadı.')
+      showError('Bağlantı hatası — kontrol yapılamadı.')
     } finally {
       setChecking(false)
     }
@@ -399,6 +405,7 @@ export default function BrandSettingsForm() {
           {saving ? 'Kaydediliyor...' : 'Marka Ayarlarını Kaydet'}
         </button>
         {success && <span className="text-green-600 text-sm">✓ Kaydedildi</span>}
+        {errorMsg && <span className="text-red-600 text-sm">{errorMsg}</span>}
       </div>
     </div>
   )

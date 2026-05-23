@@ -3,13 +3,19 @@ import { getTenantContext } from '@/lib/tenant/auth'
 import { canManageTenant } from '@/lib/tenant/permissions'
 import { createClient } from '@/lib/supabase/server'
 import { generateApiKey } from '@/lib/api/auth'
+import { rateLimit } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
 
 // GET /api/tenant/api-keys
-export async function GET() {
+export async function GET(request: Request) {
   const ctx = await getTenantContext()
   if (!canManageTenant(ctx.role)) return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
+
+  // O-27: pagination
+  const url = new URL(request.url)
+  const limit = Math.min(parseInt(url.searchParams.get('limit') || '50'), 100)
+  const offset = Math.max(parseInt(url.searchParams.get('offset') || '0'), 0)
 
   const supabase = await createClient()
   const { data } = await supabase
@@ -17,6 +23,7 @@ export async function GET() {
     .select('id, name, key_prefix, role, last_used_at, revoked_at, created_at')
     .eq('tenant_id', ctx.tenantId)
     .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1)
 
   return NextResponse.json(data || [])
 }
@@ -25,6 +32,10 @@ export async function GET() {
 export async function POST(request: Request) {
   const ctx = await getTenantContext()
   if (!canManageTenant(ctx.role)) return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
+  // O-1: API key oluşturma rate limit
+  if (!rateLimit(`api-keys-create:${ctx.tenantId}`, 10, 60_000)) {
+    return NextResponse.json({ error: 'Çok fazla istek' }, { status: 429 })
+  }
 
   const { name } = await request.json()
   if (!name || typeof name !== 'string') {

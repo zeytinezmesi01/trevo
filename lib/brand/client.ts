@@ -3,10 +3,14 @@
 import { createClient } from '@/lib/supabase/client'
 import { Brand, DEFAULT_BRAND } from '@/lib/types/brand'
 
+// O-30: TTL'li cache — sınırsız önbellekleme kullanıcı brand'ini güncellediğinde
+// eski değerin sürekli görünmesine neden oluyordu
 let cachedBrand: Brand | null = null
+let cacheTime = 0
+const CACHE_TTL = 5 * 60 * 1000
 
 export async function getBrandForDashboard(): Promise<Brand> {
-  if (cachedBrand) return cachedBrand
+  if (cachedBrand && Date.now() - cacheTime < CACHE_TTL) return cachedBrand
 
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -24,6 +28,7 @@ export async function getBrandForDashboard(): Promise<Brand> {
     brandPrimaryColor: data?.brand_primary_color || DEFAULT_BRAND.brandPrimaryColor,
     brandDomain: data?.brand_domain || DEFAULT_BRAND.brandDomain,
   }
+  cacheTime = Date.now()
   return cachedBrand
 }
 

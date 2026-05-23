@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import crypto from 'node:crypto'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { rateLimit } from '@/lib/rate-limit'
@@ -22,16 +23,14 @@ export async function POST(request: Request) {
 
   const admin = createAdminClient()
 
+  // Y-16: DB'de hash saklanır; raw key gelir, hash'leyip karşılaştırırız
+  const keyHash = crypto.createHash('sha256').update(key).digest('hex')
+
   // Key'i bul
-  // TOCTOU farkindaligi: Bu kontrol ile asagidaki UPDATE arasinda kucuk bir yaris penceresi
-  // vardir. Iki eszamanli istek ayni kullanilmamis key'i gorebilir. Pratikte risk cok dusuktur
-  // cunku: 1) kullanici basina rate limit var, 2) key zaten email-eslesmesi gerektirir.
-  // Gelecekte bir veritabani transaction'i veya UPDATE ... WHERE used_at IS NULL ile
-  // atomik hale getirilmesi onerilir.
   const { data: keyData } = await admin
     .from('registration_keys')
     .select('id, tenant_id, email, role, used_at, expires_at')
-    .eq('key', key)
+    .eq('key', keyHash)
     .maybeSingle()
 
   if (!keyData) {

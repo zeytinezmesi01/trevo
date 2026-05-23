@@ -56,6 +56,8 @@ export default function ChatWidget({ tenantId, userId, userName }: Props) {
       {/* Floating buton */}
       <button
         onClick={handleToggle}
+        aria-label={open ? 'Sohbeti kapat' : 'Sohbeti aç'}
+        aria-expanded={open}
         style={{
           width: 48, height: 48, borderRadius: '50%',
           background: 'linear-gradient(135deg, var(--brand-primary, #4f7dff), var(--brand-primary-hover, #6a96ff))',

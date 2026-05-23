@@ -56,10 +56,10 @@ export async function POST(request: Request) {
       .maybeSingle()
 
     if (c?.token) {
-      const host = request.headers.get('host') || 'localhost:3000'
-      const protocol = host.includes('localhost') ? 'http' : 'https'
+      // Host header injection fix: env'den sabit base URL kullan
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
       return NextResponse.redirect(
-        `${protocol}://${host}/portal/${c.token}/odeme-sonuc?payment=${payment.id}`,
+        `${appUrl}/portal/${c.token}/odeme-sonuc?payment=${payment.id}`,
         302,
       )
     }
@@ -85,14 +85,10 @@ export async function POST(request: Request) {
 
   const provider = getPaymentProvider(tenant || {})
 
-  // A-2: iyzico imza doğrulaması (gerçek provider için)
-  // Production'da her zaman doğrula; development'da sadece iyzico için
-  const isProduction = process.env.NODE_ENV === 'production'
-  if (isProduction || provider.name === 'iyzico') {
-    const signature = request.headers.get('x-iyz-signature')
-    if (!provider.verifyCallbackSignature(bodyText, signature)) {
-      return NextResponse.json({ error: 'Geçersiz imza' }, { status: 401 })
-    }
+  // A-2: imza doğrulaması — her zaman uygula (mock provider her zaman true döner).
+  const signature = request.headers.get('x-iyz-signature')
+  if (!provider.verifyCallbackSignature(bodyText, signature)) {
+    return NextResponse.json({ error: 'Geçersiz imza' }, { status: 401 })
   }
 
   try {

@@ -110,7 +110,8 @@ export default function EkipPage() {
   }
 
   const handleCancelInvite = async (inviteId: string) => {
-    await supabase.from('team_invitations').update({ status: 'expired' }).eq('id', inviteId)
+    // O-32: doğrudan supabase yerine API route — RLS tek savunma olmasın
+    await fetch('/api/tenant/invitations/' + inviteId, { method: 'DELETE' }).catch(() => {})
     fetchData()
   }
 

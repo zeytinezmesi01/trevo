@@ -1,5 +1,5 @@
 import { PutObjectCommand } from '@aws-sdk/client-s3'
-import { r2Client, R2_BUCKET, R2_PUBLIC_URL } from '@/lib/r2/client'
+import { getR2Client, getR2Bucket, R2_PUBLIC_URL } from '@/lib/r2/client'
 import { createClient } from '@/lib/supabase/server'
 import { getTenantContext } from '@/lib/tenant/auth'
 import { canUploadFiles } from '@/lib/tenant/permissions'
@@ -7,6 +7,7 @@ import { sendFileNotification } from '@/lib/email'
 import { NextResponse, after } from 'next/server'
 import { dispatchEvent } from '@/lib/webhooks/dispatch'
 import { WEBHOOK_EVENTS } from '@/lib/webhooks/events'
+import { rateLimit } from '@/lib/rate-limit'
 
 const ALLOWED_EXTENSIONS = new Set([
   'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx',
@@ -38,6 +39,10 @@ function isAllowedFileType(name: string, mimeType: string): boolean {
 export async function POST(request: Request) {
   const ctx = await getTenantContext()
   if (!canUploadFiles(ctx.role)) return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
+  // O-1: yükleme rate limit
+  if (!rateLimit(`upload:${ctx.tenantId}`, 30, 60_000)) {
+    return NextResponse.json({ error: 'Çok fazla istek' }, { status: 429 })
+  }
 
   const formData = await request.formData()
   const file = formData.get('file') as File
@@ -79,8 +84,8 @@ export async function POST(request: Request) {
   const key = `${ctx.tenantId}/${folder}/${Date.now()}-${safeName}`
   const buffer = Buffer.from(await file.arrayBuffer())
 
-  await r2Client.send(new PutObjectCommand({
-    Bucket: R2_BUCKET,
+  await getR2Client().send(new PutObjectCommand({
+    Bucket: getR2Bucket(),
     Key: key,
     Body: buffer,
     ContentType: file.type,
@@ -137,7 +142,6 @@ export async function POST(request: Request) {
         clientName: client.name,
         clientEmail: client.email,
         fileName: file.name,
-        fileUrl: publicUrl,
         portalUrl: `${baseUrl}/portal/${client.token}`,
         brand: profile?.brand_name ? {
           brandName: profile.brand_name,

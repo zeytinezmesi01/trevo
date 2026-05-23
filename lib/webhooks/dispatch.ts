@@ -8,6 +8,28 @@ const RETRY_DELAYS = [0, 2000, 5000] // milisaniye cinsinden
 
 type WebhookPayload = Record<string, unknown>
 
+// SSRF koruması: localhost, private IP'ler ve metadata endpoint'leri engelle
+function isUrlSafe(urlStr: string): boolean {
+  try {
+    const url = new URL(urlStr)
+    if (!['https:', 'http:'].includes(url.protocol)) return false
+    const host = url.hostname.toLowerCase()
+    if (host === 'localhost' || host === '127.0.0.1' || host === '::1') return false
+    if (host === '0.0.0.0' || host.endsWith('.local') || host.endsWith('.internal')) return false
+    const parts = host.split('.').map(Number)
+    if (parts.length === 4 && parts.every((p) => Number.isFinite(p))) {
+      if (parts[0] === 10) return false // 10.0.0.0/8
+      if (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) return false // 172.16.0.0/12
+      if (parts[0] === 192 && parts[1] === 168) return false // 192.168.0.0/16
+      if (parts[0] === 169 && parts[1] === 254) return false // 169.254.0.0/16 (metadata)
+      if (parts[0] === 127) return false // 127.0.0.0/8
+    }
+    return true
+  } catch {
+    return false
+  }
+}
+
 /**
  * dispatchEvent — tenant'ın aktif webhook'larına event gönder.
  * Tüm hataları yutar, ana akışı asla çökertmez.
@@ -40,6 +62,9 @@ export async function dispatchEvent(
     const bodyStr = JSON.stringify(payload)
 
     for (const ep of endpoints) {
+      // SSRF koruması: güvensiz URL'leri atla
+      if (!isUrlSafe(ep.url)) continue
+
       // D-2: Secret şifreliyse çöz
       const deliverySecret = decryptSecret(ep.secret || '')
       const deliveryId = crypto.randomUUID()

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getPaymentProvider } from '@/lib/payment'
+import { rateLimit } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
 
@@ -12,6 +13,11 @@ export async function POST(request: Request) {
 
   if (!portalToken || typeof portalToken !== 'string') {
     return NextResponse.json({ error: 'Geçersiz portal token' }, { status: 400 })
+  }
+
+  // O-1: portal token başına ödeme başlatma rate limit
+  if (!rateLimit(`payments-init:${portalToken}`, 10, 60_000)) {
+    return NextResponse.json({ error: 'Çok fazla istek' }, { status: 429 })
   }
   if (!invoiceId || typeof invoiceId !== 'string') {
     return NextResponse.json({ error: 'Geçersiz fatura kimliği' }, { status: 400 })
@@ -82,10 +88,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Ödeme kaydı oluşturulamadı' }, { status: 500 })
   }
 
-  // Callback URL (request host'undan türet)
-  const host = request.headers.get('host') || 'localhost:3000'
-  const protocol = host.includes('localhost') ? 'http' : 'https'
-  const callbackUrl = `${protocol}://${host}/api/payments/callback`
+  // Callback URL — host header injection fix: env'den sabit base URL kullan
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  const callbackUrl = `${appUrl}/api/payments/callback`
 
   // Client IP
   const buyerIp =
@@ -110,7 +115,8 @@ export async function POST(request: Request) {
         name: firstName,
         surname: lastName,
         email: client.email || `${client.id}@client.trevo.local`,
-        identityNumber: client.tax_number || client.id.slice(0, 11),
+        // O-17: client.id UUID; iyzico TCKN bekliyor. Sabit test TCKN'si kullan.
+        identityNumber: client.tax_number || '11111111111',
         address: client.address || 'Belirtilmemiş',
         city: client.city || 'İstanbul',
         country: 'Turkey',

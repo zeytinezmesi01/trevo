@@ -42,7 +42,7 @@ export async function sendTeamInvitation({
             Ekibe katılmak için aşağıdaki butona tıklayın ve hesabınızı oluşturun.
             Davet 7 gün geçerlidir.
           </p>
-          <a href="${inviteUrl}" style="display:inline-block;background:linear-gradient(135deg,#4f7dff,#6a96ff);color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:10px;font-size:14px;font-weight:600;">
+          <a href="${escapeHtml(inviteUrl)}" style="display:inline-block;background:linear-gradient(135deg,#4f7dff,#6a96ff);color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:10px;font-size:14px;font-weight:600;">
             Ekibe Katıl
           </a>
           <p style="margin:24px 0 0;color:#94a3b8;font-size:12px;">
@@ -60,20 +60,21 @@ export async function sendFileNotification({
   clientName,
   clientEmail,
   fileName,
-  fileUrl,
   portalUrl,
   brand,
 }: {
   clientName: string
   clientEmail: string
   fileName: string
-  fileUrl: string
+  // D-20: fileUrl kaldirildi — sablonda kullanilmiyordu
   portalUrl: string
   brand?: Brand
 }) {
   const b = brand || DEFAULT_BRAND
   const brandName = escapeHtml(b.brandName || 'Trevo')
-  const primaryColor = b.brandPrimaryColor || '#111827'
+  // O-8: CSS injection koruması — sadece geçerli hex renk kabul et
+  const rawColor = b.brandPrimaryColor || '#111827'
+  const primaryColor = /^#[0-9a-fA-F]{6}$/.test(rawColor) ? rawColor : '#111827'
   const fromEmail = process.env.RESEND_FROM_EMAIL || `bildirim@trevo-delta.vercel.app`
   const safeClientName = escapeHtml(clientName)
   const safeFileName = escapeHtml(fileName)
@@ -108,7 +109,7 @@ export async function sendFileNotification({
                 </p>
               </div>
 
-              <a href="${portalUrl}" style="display:inline-block;background:${primaryColor};color:#ffffff;text-decoration:none;padding:14px 28px;border-radius:10px;font-size:14px;font-weight:600;">
+              <a href="${escapeHtml(portalUrl)}" style="display:inline-block;background:${primaryColor};color:#ffffff;text-decoration:none;padding:14px 28px;border-radius:10px;font-size:14px;font-weight:600;">
                 Portale Git &rarr;
               </a>
 

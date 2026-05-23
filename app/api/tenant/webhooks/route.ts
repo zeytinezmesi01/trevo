@@ -10,9 +10,14 @@ export const runtime = 'nodejs'
 const WEBHOOK_LIST_FIELDS = 'id, url, events, active, description, created_at, updated_at'
 
 // GET /api/tenant/webhooks
-export async function GET() {
+export async function GET(request: Request) {
   const ctx = await getTenantContext()
   if (!canManageTenant(ctx.role)) return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
+
+  // O-27: pagination
+  const url = new URL(request.url)
+  const limit = Math.min(parseInt(url.searchParams.get('limit') || '50'), 100)
+  const offset = Math.max(parseInt(url.searchParams.get('offset') || '0'), 0)
 
   const supabase = await createClient()
   const { data } = await supabase
@@ -20,6 +25,7 @@ export async function GET() {
     .select(WEBHOOK_LIST_FIELDS)
     .eq('tenant_id', ctx.tenantId)
     .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1)
 
   return NextResponse.json(data || [])
 }
@@ -61,5 +67,13 @@ export async function POST(request: Request) {
     console.error('Webhook oluşturma hatası:', error)
     return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
   }
-  return NextResponse.json(data, { status: 201 })
+  // Y-5: rawSecret yalnızca oluşturma response'unda gösterilir
+  return NextResponse.json(
+    {
+      ...data,
+      secret: rawSecret,
+      secretNote: 'Bu secret yalnızca bir kez gösterilir. Kaydedin.',
+    },
+    { status: 201 },
+  )
 }

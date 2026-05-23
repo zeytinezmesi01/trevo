@@ -1,6 +1,6 @@
 import { renderToBuffer } from '@react-pdf/renderer'
 import { PutObjectCommand } from '@aws-sdk/client-s3'
-import { r2Client, R2_BUCKET, R2_PUBLIC_URL } from '@/lib/r2/client'
+import { getR2Client, getR2Bucket, R2_PUBLIC_URL } from '@/lib/r2/client'
 import { createClient } from '@/lib/supabase/server'
 import InvoicePDF from './invoice-template'
 
@@ -44,8 +44,8 @@ export async function generateAndStoreInvoicePDF(invoiceId: string, tenantId: st
   const buffer = await renderToBuffer(<InvoicePDF invoice={invoiceData} />)
 
   const key = `${tenantId}/invoices/${invoiceId}.pdf`
-  await r2Client.send(new PutObjectCommand({
-    Bucket: R2_BUCKET,
+  await getR2Client().send(new PutObjectCommand({
+    Bucket: getR2Bucket(),
     Key: key,
     Body: Buffer.from(buffer),
     ContentType: 'application/pdf',

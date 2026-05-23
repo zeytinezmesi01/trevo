@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { GetObjectCommand } from '@aws-sdk/client-s3'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { r2Client, R2_BUCKET, R2_PUBLIC_URL } from '@/lib/r2/client'
+import { getR2Client, getR2Bucket, R2_PUBLIC_URL } from '@/lib/r2/client'
 
 export const runtime = 'nodejs'
 
@@ -58,7 +58,8 @@ export async function GET(
   }
 
   if (!authorized) {
-    return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
+    // Y-6: ID enumerasyonunu engellemek için 404 dön
+    return NextResponse.json({ error: 'Dosya bulunamadı' }, { status: 404 })
   }
 
   // R2'den stream et
@@ -68,7 +69,7 @@ export async function GET(
   }
 
   try {
-    const obj = await r2Client.send(new GetObjectCommand({ Bucket: R2_BUCKET, Key: key }))
+    const obj = await getR2Client().send(new GetObjectCommand({ Bucket: getR2Bucket(), Key: key }))
     if (!obj.Body) {
       return NextResponse.json({ error: 'Dosya içeriği bulunamadı' }, { status: 404 })
     }

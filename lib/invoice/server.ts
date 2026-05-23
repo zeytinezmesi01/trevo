@@ -88,7 +88,13 @@ export async function createInvoice(
   }))
   const totals = calculateTotals(itemsForCalc, data.tevkifat_rate || 0)
 
-  const displayKdvRate = data.vat_exempt ? 0 : (data.items[0]?.kdv_rate || 20)
+  // O-25: tüm kalemler aynı orana sahipse onu, değilse ilk kalemin oranını göster
+  const displayKdvRate = (() => {
+    if (data.vat_exempt) return 0
+    const rates = data.items.map((i) => i.kdv_rate)
+    const unique = [...new Set(rates)]
+    return unique.length === 1 ? unique[0] : (rates[0] ?? 20)
+  })()
 
   // Invoice ekle
   const { data: invoice, error: invoiceError } = await client
@@ -149,11 +155,11 @@ export async function createInvoice(
   return invoice.id as string
 }
 
-// İzin verilen durum geçişlerini kontrol et
+// İzin verilen durum geçişlerini kontrol et (Y-14: TOCTOU fix — atomik update)
 export async function updateInvoiceStatus(invoiceId: string, tenantId: string, status: string, data?: { emailed_at?: string; email_to?: string; pdf_url?: string }) {
   const supabase = await createClient()
 
-  // Mevcut durumu oku
+  // Mevcut durumu oku (validasyon için)
   const { data: current } = await supabase
     .from('invoices')
     .select('status')
@@ -161,16 +167,26 @@ export async function updateInvoiceStatus(invoiceId: string, tenantId: string, s
     .eq('tenant_id', tenantId)
     .maybeSingle()
 
-  if (current) {
-    const allowed = ALLOWED_STATUS_TRANSITIONS[current.status as string] || []
-    if (status && current.status !== status && !allowed.includes(status)) {
-      throw new Error(`"${current.status}" durumundan "${status}" durumuna geçiş yapılamaz`)
-    }
+  if (!current) throw new Error('Fatura bulunamadı')
+
+  const allowed = ALLOWED_STATUS_TRANSITIONS[current.status as string] || []
+  if (status && current.status !== status && !allowed.includes(status)) {
+    throw new Error(`"${current.status}" durumundan "${status}" durumuna geçiş yapılamaz`)
   }
 
+  // Atomik güncelleme: eski status'u WHERE'e ekle — başka istek değiştirmişse 0 satır etkilenir
   const update: Record<string, unknown> = { status, ...data, updated_at: new Date().toISOString() }
-  const { error } = await supabase.from('invoices').update(update).eq('id', invoiceId).eq('tenant_id', tenantId)
+  const { error, count } = await supabase
+    .from('invoices')
+    .update(update, { count: 'exact' })
+    .eq('id', invoiceId)
+    .eq('tenant_id', tenantId)
+    .eq('status', current.status)
+
   if (error) throw error
+  if (count === 0) {
+    throw new Error('Fatura durumu başka bir işlem tarafından değiştirildi, tekrar deneyin')
+  }
 }
 
 export async function deleteInvoice(invoiceId: string, tenantId: string) {

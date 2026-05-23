@@ -4,6 +4,16 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { clearBrandCache } from '@/lib/brand/server'
 import { promises as dns } from 'dns'
 
+// O-5: DNS sorgularını timeout ile sarmala
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('DNS timeout')), ms),
+    ),
+  ])
+}
+
 async function checkVercelDomain(domain: string): Promise<boolean> {
   const token = process.env.VERCEL_API_TOKEN
   const projectId = process.env.VERCEL_PROJECT_ID
@@ -54,7 +64,7 @@ export async function POST() {
 
   // 1) TXT kaydı kontrolü
   try {
-    const txtRecords = await dns.resolveTxt('_trevo-verify.' + domain)
+    const txtRecords = await withTimeout(dns.resolveTxt('_trevo-verify.' + domain), 5000)
     const flat = txtRecords.flat()
     if (!flat.includes(token)) {
       status = 'pending'
@@ -67,14 +77,14 @@ export async function POST() {
       // 2) CNAME veya A kaydı kontrolü (Vercel'e yönleniyor mu?)
       let resolved = false
       try {
-        const cnames = await dns.resolveCname(domain)
+        const cnames = await withTimeout(dns.resolveCname(domain), 5000)
         resolved = cnames.some(
           (c) => c === 'cname.vercel-dns.com' || c.endsWith('.vercel-dns.com')
         )
       } catch { /* CNAME olmayabilir, A kaydına bakariz */ }
       if (!resolved) {
         try {
-          const addrs = await dns.resolve4(domain)
+          const addrs = await withTimeout(dns.resolve4(domain), 5000)
           resolved = addrs.some((ip) =>
             ['76.76.21.21', '76.76.21.93', '76.76.21.98', '76.76.21.123', '76.76.21.142'].includes(ip)
           )

@@ -6,7 +6,9 @@ export default function DashboardError({ error, reset }: { error: Error; reset: 
       <div style={{ fontSize: 48, marginBottom: 12 }}>⚠️</div>
       <h2 style={{ fontSize: 20, fontWeight: 700, color: '#0f172a', marginBottom: 8 }}>Bir şeyler yanlış gitti</h2>
       <p style={{ color: '#64748b', fontSize: 14, marginBottom: 20, maxWidth: 400 }}>
-        {error.message || 'Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.'}
+        {process.env.NODE_ENV === 'development'
+          ? error.message || 'Beklenmeyen bir hata oluştu.'
+          : 'Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.'}
       </p>
       <button
         onClick={reset}

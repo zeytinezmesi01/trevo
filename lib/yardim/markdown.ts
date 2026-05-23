@@ -1,10 +1,4 @@
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-}
+import { escapeHtml } from '@/lib/escape-html'
 
 function parseInline(text: string): string {
   // text should already be HTML-escaped
@@ -13,8 +7,9 @@ function parseInline(text: string): string {
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
     .replace(/\*([^*]+)\*/g, '<em>$1</em>')
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, t, u) => {
-      const url = u.startsWith('http') ? u : u
-      return `<a href="${url}" target="_blank" rel="noopener noreferrer">${t}</a>`
+      // O-7: javascript:, data:, vbscript: URL'lerini engelle — sadece metni döndür
+      if (/^\s*(javascript|data|vbscript):/i.test(u)) return t
+      return `<a href="${u}" target="_blank" rel="noopener noreferrer">${t}</a>`
     })
 }
 

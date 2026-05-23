@@ -24,8 +24,13 @@ export async function POST(request: Request) {
 
   // amount doğrulama
   const parsedAmount = parseFloat(amount)
-  if (isNaN(parsedAmount) || parsedAmount < 0) {
-    return NextResponse.json({ error: 'Geçersiz tutar' }, { status: 400 })
+  if (isNaN(parsedAmount) || parsedAmount <= 0) {
+    return NextResponse.json({ error: 'Tutar sıfırdan büyük olmalı' }, { status: 400 })
+  }
+  // Y-4: Üst sınır — fatura talebi en fazla 1.000.000 TL
+  const MAX_REQUEST_AMOUNT = 1_000_000
+  if (parsedAmount > MAX_REQUEST_AMOUNT) {
+    return NextResponse.json({ error: 'Tutar çok yüksek' }, { status: 400 })
   }
 
   // Find client by portal token
@@ -51,7 +56,9 @@ export async function POST(request: Request) {
   const invoiceNumber = await generateInvoiceNumber(tenantId)
 
   const lineTotal = parsedAmount
-  const kdvRate = typeof body.kdv_rate === 'number' && body.kdv_rate >= 0 && body.kdv_rate <= 100 ? body.kdv_rate : 20
+  // Y-4: KDV oranı whitelist
+  const ALLOWED_KDV_RATES = [0, 1, 10, 20]
+  const kdvRate = ALLOWED_KDV_RATES.includes(body.kdv_rate) ? body.kdv_rate : 20
   const kdvAmount = lineTotal * kdvRate / 100
   const total = lineTotal + kdvAmount
 

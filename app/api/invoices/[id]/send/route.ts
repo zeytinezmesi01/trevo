@@ -5,12 +5,17 @@ import { getInvoice, updateInvoiceStatus } from '@/lib/invoice/server'
 import { generateAndStoreInvoicePDF } from '@/lib/pdf/generate-invoice'
 import { Resend } from 'resend'
 import { escapeHtml } from '@/lib/escape-html'
+import { rateLimit } from '@/lib/rate-limit'
 
 const FROM = process.env.RESEND_FROM_EMAIL || 'Trevo <bildirim@trevo-delta.vercel.app>'
 
 export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const ctx = await getTenantContext()
   if (!canCreateInvoices(ctx.role)) return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
+  // O-1: fatura gönderim rate limit (e-posta spam koruması)
+  if (!rateLimit(`invoice-send:${ctx.tenantId}`, 30, 60_000)) {
+    return NextResponse.json({ error: 'Çok fazla istek' }, { status: 429 })
+  }
   const { id } = await params
 
   const invoice = await getInvoice(id, ctx.tenantId)
@@ -47,7 +52,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
           <p style="margin:0 0 24px;color:#64748b;font-size:14px;">
             ${safeInvoiceNumber} numaralı faturanız ${total} ₺ tutarındadır.
           </p>
-          ${pdfUrl ? `<a href="${pdfUrl}" style="display:inline-block;background:#4f7dff;color:#fff;text-decoration:none;padding:14px 28px;border-radius:10px;font-size:14px;font-weight:600;">Faturayı Görüntüle</a>` : ''}
+          ${pdfUrl ? `<a href="${escapeHtml(pdfUrl)}" style="display:inline-block;background:#4f7dff;color:#fff;text-decoration:none;padding:14px 28px;border-radius:10px;font-size:14px;font-weight:600;">Faturayı Görüntüle</a>` : ''}
           <p style="margin:24px 0 0;color:#94a3b8;font-size:12px;">Ödeme bilgileriniz fatura üzerinde yer almaktadır.</p>
         </td></tr>
       </table>

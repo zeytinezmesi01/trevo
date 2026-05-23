@@ -15,7 +15,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       .eq('tenant_id', tenantId)
       .maybeSingle()
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) {
+      // O-57: DB hatasını client'a sızdırma
+      console.error('v1 GET clients/[id] DB error:', error)
+      return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
+    }
     if (!data) return NextResponse.json({ error: 'Bulunamadı' }, { status: 404 })
     return NextResponse.json(data)
   })

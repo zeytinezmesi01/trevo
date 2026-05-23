@@ -215,7 +215,12 @@ export async function POST(
       .update({ einvoice_status: 'error', einvoice_type: documentType, updated_at: new Date().toISOString() })
       .eq('id', id)
 
-    return NextResponse.json({ error: msg }, { status: 500 })
+    // O-4: hata detayını client'a sızdırma; sadece sunucu log'una yaz
+    console.error('E-invoice send error:', e)
+    return NextResponse.json(
+      { error: 'Fatura gönderilemedi, lütfen tekrar deneyin' },
+      { status: 500 },
+    )
   }
 
   // 10. Başarılı kayıt oluştur

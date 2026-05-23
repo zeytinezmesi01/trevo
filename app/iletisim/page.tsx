@@ -29,13 +29,16 @@ export default function IletisimPage() {
         </div>
 
         <div style={{ padding: 28, borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid #1a2236' }}>
-          <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 20 }}>Mesaj Bırak</h2>
-          <form style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <input type="text" placeholder="Ad Soyad" style={{ padding: '12px 16px', borderRadius: 8, border: '1px solid #1a2236', background: '#0e1420', color: '#fff', fontSize: 14, outline: 'none' }} />
-            <input type="email" placeholder="E-posta" style={{ padding: '12px 16px', borderRadius: 8, border: '1px solid #1a2236', background: '#0e1420', color: '#fff', fontSize: 14, outline: 'none' }} />
-            <textarea rows={4} placeholder="Mesajınız..." style={{ padding: '12px 16px', borderRadius: 8, border: '1px solid #1a2236', background: '#0e1420', color: '#fff', fontSize: 14, outline: 'none', resize: 'vertical' }} />
-            <button type="submit" style={{ padding: '12px 24px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #4f7dff, #6a96ff)', color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>Gönder</button>
-          </form>
+          <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 12 }}>Mesaj Bırak</h2>
+          <p style={{ color: '#8a9ab5', fontSize: 14, lineHeight: 1.6, marginBottom: 20 }}>
+            Sorularınız için doğrudan e-posta gönderebilirsiniz. Genelde 24 saat içinde yanıtlıyoruz.
+          </p>
+          <a
+            href="mailto:bilgi@trevo-delta.vercel.app?subject=İletişim%20Formu"
+            style={{ display: 'inline-block', padding: '12px 24px', borderRadius: 8, background: 'linear-gradient(135deg, #4f7dff, #6a96ff)', color: '#fff', fontWeight: 700, fontSize: 14, textDecoration: 'none' }}
+          >
+            E-posta Gönder
+          </a>
         </div>
       </div>
     </div>

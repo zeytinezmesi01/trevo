@@ -46,10 +46,13 @@ export default function DashboardTopbar({ userName }: { userName: string }) {
         </svg>
         <input
           type="text"
-          placeholder="Ara... (müşteri, dosya, hizmet)"
+          placeholder="Arama yakında..."
+          disabled
+          aria-label="Arama"
           style={{
             border: 'none', outline: 'none', background: 'transparent',
-            fontSize: '13px', color: '#0f172a', width: '100%',
+            fontSize: '13px', color: '#94a3b8', width: '100%',
+            cursor: 'not-allowed',
           }}
         />
         <span
@@ -67,6 +70,7 @@ export default function DashboardTopbar({ userName }: { userName: string }) {
       <div className="flex items-center gap-2.5">
         {/* Notification */}
         <button
+          aria-label="Bildirimler"
           className="flex items-center justify-center transition-all"
           style={{
             width: '36px', height: '36px', borderRadius: '10px',
@@ -98,6 +102,7 @@ export default function DashboardTopbar({ userName }: { userName: string }) {
 
         {/* Settings */}
         <button
+          aria-label="Ayarlar"
           onClick={() => router.push('/dashboard/ayarlar')}
           className="flex items-center justify-center transition-all"
           style={{

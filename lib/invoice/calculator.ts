@@ -18,9 +18,14 @@ export function calculateTotals(items: LineItem[], tevkifatRate = 0): InvoiceTot
   let kdvAmount = 0
 
   for (const item of items) {
+    // D-18: Negatif/geçersiz değer kontrolü
+    if (item.quantity <= 0 || item.unit_price < 0 || item.kdv_rate < 0 || item.kdv_rate > 100) {
+      throw new Error('Geçersiz kalem değerleri')
+    }
     const lineTotal = item.quantity * item.unit_price
     subtotal += lineTotal
-    kdvAmount += lineTotal * item.kdv_rate / 100
+    // O-54: KDV'yi kalem bazlı yuvarla — kuruş farkları birikmez
+    kdvAmount += round(lineTotal * item.kdv_rate / 100)
   }
 
   const tevkifatAmount = kdvAmount * tevkifatRate / 100

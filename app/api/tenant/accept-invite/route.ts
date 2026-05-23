@@ -49,6 +49,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Bu takıma zaten üyesiniz' }, { status: 409 })
   }
 
+  // Y-11: Eski tenant'i temizlemeden önce kaydet
+  const { data: oldProfile } = await admin
+    .from('profiles')
+    .select('tenant_id')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  const oldTenantId = oldProfile?.tenant_id
+
   // Add to tenant_members
   await admin.from('tenant_members').insert({
     tenant_id: invitation.tenant_id,
@@ -66,6 +75,22 @@ export async function POST(request: Request) {
 
   // Mark invitation accepted
   await admin.from('team_invitations').update({ status: 'accepted' }).eq('id', invitation.id)
+
+  // Y-11: Trigger'in auto-created bos tenant'ini temizle
+  if (oldTenantId && oldTenantId !== invitation.tenant_id) {
+    await admin
+      .from('tenant_members')
+      .delete()
+      .eq('tenant_id', oldTenantId)
+      .eq('user_id', user.id)
+    const { count } = await admin
+      .from('tenant_members')
+      .select('id', { count: 'exact', head: true })
+      .eq('tenant_id', oldTenantId)
+    if (count === 0) {
+      await admin.from('tenants').delete().eq('id', oldTenantId)
+    }
+  }
 
   return NextResponse.json({ ok: true, tenantId: invitation.tenant_id })
 }

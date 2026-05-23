@@ -51,6 +51,14 @@ export function buildEInvoicePayload(params: {
   }
   documentType: EInvoiceDocumentType
 }): EInvoicePayload {
+  // D-19: Zorunlu satici alanlari icin erken hata
+  if (!params.seller.company_tax_number) {
+    throw new Error('Satıcı vergi numarası zorunludur')
+  }
+  if (!params.seller.company_name && !params.seller.brand_name) {
+    throw new Error('Satıcı adı zorunludur')
+  }
+
   const items: EInvoiceLineItem[] = params.items.map((item) => ({
     description: item.description,
     quantity: item.quantity,
@@ -62,7 +70,7 @@ export function buildEInvoicePayload(params: {
   }))
 
   return {
-    sellerTaxNumber: params.seller.company_tax_number || '',
+    sellerTaxNumber: params.seller.company_tax_number,
     sellerTaxOffice: params.seller.company_tax_office || '',
     sellerName: params.seller.company_name || params.seller.brand_name || '',
     sellerAddress: {

@@ -197,6 +197,7 @@ export default function DashboardSidebar({
             <Link
               key={item.href}
               href={item.href}
+              aria-current={active ? 'page' : undefined}
               className="flex items-center gap-2.5 transition-all"
               style={{
                 padding: '9px 12px',

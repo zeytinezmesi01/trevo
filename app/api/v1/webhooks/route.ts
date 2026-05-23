@@ -59,6 +59,14 @@ export async function POST(request: Request) {
       console.error('v1 POST webhooks error:', error)
       return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
     }
-    return NextResponse.json(data, { status: 201 })
+    // Y-5: rawSecret yalnızca oluşturma response'unda gösterilir
+    return NextResponse.json(
+      {
+        ...data,
+        secret: rawSecret,
+        secretNote: 'Bu secret yalnızca bir kez gösterilir. Kaydedin.',
+      },
+      { status: 201 },
+    )
   })
 }

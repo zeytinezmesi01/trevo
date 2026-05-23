@@ -39,7 +39,7 @@ export default async function DashboardPage() {
 
   const stats = [
     {
-      color: 'green', label: 'Müşteri', value: clientCount ?? 0, trend: '+3',
+      color: 'green', label: 'Müşteri', value: clientCount ?? 0, trend: null,
       iconBg: '#ecfdf5', iconColor: '#10b981',
       icon: (
         <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="22" height="22">
@@ -48,7 +48,7 @@ export default async function DashboardPage() {
       ),
     },
     {
-      color: 'blue', label: 'Hizmet', value: serviceCount ?? 0, trend: '+1',
+      color: 'blue', label: 'Hizmet', value: serviceCount ?? 0, trend: null,
       iconBg: '#eef2ff', iconColor: 'var(--brand-primary, #4f7dff)',
       icon: (
         <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="22" height="22">
@@ -68,7 +68,7 @@ export default async function DashboardPage() {
       ),
     },
     {
-      color: 'orange', label: 'Dosya', value: fileCount ?? 0, trend: '+12',
+      color: 'orange', label: 'Dosya', value: fileCount ?? 0, trend: null,
       iconBg: '#fffbeb', iconColor: '#f59e0b',
       icon: (
         <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="22" height="22">

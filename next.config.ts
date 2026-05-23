@@ -29,6 +29,8 @@ const nextConfig: NextConfig = {
     const directives: Record<string, string[]> = {
       'default-src': ["'self'"],
       'script-src': scriptSrc,
+      // O-19: Tailwind CSS 4 runtime inline style üretir — nonce tabanlı CSP'ye
+      // geçiş için Tailwind'in derleme moduna geçmek gerekir. Risk kabulü.
       'style-src': ["'self'", "'unsafe-inline'"],
       'img-src': ["'self'", 'data:', 'blob:'],
       'connect-src': connectSrc,
@@ -71,6 +73,10 @@ const nextConfig: NextConfig = {
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'Content-Security-Policy', value: csp },
+          // Y-9: HTTPS zorunlu (production'da etkin)
+          { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+          // O-20: tarayıcı yeteneklerini kısıtla
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
         ],
       },
     ];
