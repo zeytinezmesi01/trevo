@@ -63,25 +63,27 @@ export async function POST() {
       status = 'verified'
       error = null
 
-      // 2) CNAME kontrolü
+      // 2) CNAME veya A kaydı kontrolü (Vercel'e yönleniyor mu?)
+      let resolved = false
       try {
         const cnames = await dns.resolveCname(domain)
-        const hasVercelCname = cnames.some(
+        resolved = cnames.some(
           (c) => c === 'cname.vercel-dns.com' || c.endsWith('.vercel-dns.com')
         )
-        if (hasVercelCname) {
-          status = 'active'
-          error = null
-        } else {
-          error = 'CNAME henüz yapılandırılmamış'
-        }
-      } catch (cnameErr: unknown) {
-        const code = (cnameErr as NodeJS.ErrnoException).code
-        if (code === 'ENOTFOUND' || code === 'ENODATA') {
-          error = 'CNAME henüz yapılandırılmamış'
-        } else {
-          error = 'CNAME sorgulanamadı'
-        }
+      } catch { /* CNAME olmayabilir, A kaydına bakariz */ }
+      if (!resolved) {
+        try {
+          const addrs = await dns.resolve4(domain)
+          resolved = addrs.some((ip) =>
+            ['76.76.21.21', '76.76.21.93', '76.76.21.98', '76.76.21.123', '76.76.21.142'].includes(ip)
+          )
+        } catch { /* A kaydi da yok */ }
+      }
+      if (resolved) {
+        status = 'active'
+        error = null
+      } else {
+        error = 'DNS yapılandırılmamış (A veya CNAME kaydı ekleyin)'
       }
     }
   } catch (txtErr: unknown) {

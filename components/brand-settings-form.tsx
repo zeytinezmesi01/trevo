@@ -199,7 +199,7 @@ export default function BrandSettingsForm() {
       case 'pending':
         return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-50 text-yellow-700 border border-yellow-200 whitespace-nowrap">Doğrulama bekleniyor</span>
       case 'verified':
-        return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 whitespace-nowrap">Sahiplik onaylandı, CNAME bekleniyor</span>
+        return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 whitespace-nowrap">Sahiplik onaylandı, DNS yönlendirmesi bekleniyor</span>
       case 'active':
         return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200 whitespace-nowrap">Yayında ✓</span>
       default:
