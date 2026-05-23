@@ -1,9 +1,29 @@
 import Link from 'next/link'
 import Image from 'next/image'
+import { headers } from 'next/headers'
+import { redirect } from 'next/navigation'
+import { createAdminClient } from '@/lib/supabase/admin'
 import ThemeToggle from '@/components/landing/theme-toggle'
 import ScrollRevealInit from '@/components/landing/scroll-reveal-init'
 
-export default function Home() {
+const DEFAULT_DOMAINS = ['localhost', 'trevo-delta.vercel.app']
+
+export default async function Home() {
+  // Custom domain'de Trevo anasayfasi gosterilmez, giris sayfasina yonlendir
+  const headersList = await headers()
+  const host = headersList.get('host') || ''
+  const domain = host.replace(/:\d+$/, '').replace(/^www\./, '')
+  if (!DEFAULT_DOMAINS.some((d) => domain === d || domain.endsWith('.' + d))) {
+    const admin = createAdminClient()
+    const { data } = await admin
+      .from('profiles')
+      .select('id')
+      .eq('brand_domain', domain)
+      .eq('brand_domain_status', 'active')
+      .maybeSingle()
+    if (data) redirect('/giris')
+  }
+
   return (
     <div className="relative">
       <ScrollRevealInit />

@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Brand, DEFAULT_BRAND } from '@/lib/types/brand'
-import { readBrandFromCookie } from '@/lib/brand/client'
+import { readBrandFromCookie, readBrandTenantIdFromCookie } from '@/lib/brand/client'
 
 function KayitForm() {
   const [name, setName] = useState('')
@@ -15,6 +15,7 @@ function KayitForm() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const [brand, setBrand] = useState<Brand>(DEFAULT_BRAND)
+  const [isCustomDomain, setIsCustomDomain] = useState(false)
   const [kvkkAccepted, setKvkkAccepted] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -35,9 +36,12 @@ function KayitForm() {
   }, [inviteToken])
 
   useEffect(() => {
+    const tenantId = readBrandTenantIdFromCookie()
+    setIsCustomDomain(!!tenantId)
+
+    const profileId = readBrandFromCookie()
+    if (!profileId) return
     const loadBrand = async () => {
-      const profileId = readBrandFromCookie()
-      if (!profileId) return
       const { data } = await supabase
         .from('profiles')
         .select('brand_name, brand_logo_url, brand_primary_color')
@@ -83,6 +87,16 @@ function KayitForm() {
       }).catch(() => {})
     }
 
+    // Custom domain'den kayit olan kullaniciyi domain sahibinin tenant'ina ekle
+    const domainTenantId = readBrandTenantIdFromCookie()
+    if (!inviteToken && domainTenantId && signupData.user) {
+      await fetch('/api/brand/domain/join', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenant_id: domainTenantId }),
+      }).catch(() => {})
+    }
+
     setSuccess(true)
     setLoading(false)
   }
@@ -114,8 +128,17 @@ function KayitForm() {
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <Link href="/" className="text-2xl font-bold text-primary">{brandName}</Link>
-            <h1 className="text-xl font-semibold text-gray-900 mt-6 mb-1">Hesap oluştur</h1>
-            <p className="text-gray-500 text-sm">7 gün ücretsiz, kart gerekmez</p>
+            {isCustomDomain ? (
+              <>
+                <h1 className="text-xl font-semibold text-gray-900 mt-6 mb-1">{brandName} ekibine katıl</h1>
+                <p className="text-gray-500 text-sm">Ekip arkadaşlarınla birlikte çalış</p>
+              </>
+            ) : (
+              <>
+                <h1 className="text-xl font-semibold text-gray-900 mt-6 mb-1">Hesap oluştur</h1>
+                <p className="text-gray-500 text-sm">7 gün ücretsiz, kart gerekmez</p>
+              </>
+            )}
           </div>
 
           <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">
@@ -181,12 +204,22 @@ function KayitForm() {
             </form>
           </div>
 
-          <p className="text-center text-sm text-gray-500 mt-6">
-            Zaten hesabın var mı?{' '}
-            <Link href="/giris" className="text-primary font-medium hover:underline">
-              Giriş yap
-            </Link>
-          </p>
+          {!isCustomDomain && (
+            <p className="text-center text-sm text-gray-500 mt-6">
+              Zaten hesabın var mı?{' '}
+              <Link href="/giris" className="text-primary font-medium hover:underline">
+                Giriş yap
+              </Link>
+            </p>
+          )}
+          {isCustomDomain && (
+            <p className="text-center text-sm text-gray-500 mt-6">
+              Zaten {brandName} ekibinde misin?{' '}
+              <Link href="/giris" className="text-primary font-medium hover:underline">
+                Giriş yap
+              </Link>
+            </p>
+          )}
         </div>
       </div>
     </>

@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Brand, DEFAULT_BRAND } from '@/lib/types/brand'
-import { readBrandFromCookie } from '@/lib/brand/client'
+import { readBrandFromCookie, readBrandTenantIdFromCookie } from '@/lib/brand/client'
 
 export default function GirisPage() {
   const [email, setEmail] = useState('')
@@ -13,13 +13,18 @@ export default function GirisPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [brand, setBrand] = useState<Brand>(DEFAULT_BRAND)
+  const [isCustomDomain, setIsCustomDomain] = useState(false)
+  const [tab, setTab] = useState<'isletme' | 'ekip'>('isletme')
   const router = useRouter()
   const supabase = createClient()
 
   useEffect(() => {
+    const profileId = readBrandFromCookie()
+    const tenantId = readBrandTenantIdFromCookie()
+    setIsCustomDomain(!!tenantId)
+
+    if (!profileId) return
     const loadBrand = async () => {
-      const profileId = readBrandFromCookie()
-      if (!profileId) return
       const { data } = await supabase
         .from('profiles')
         .select('brand_name, brand_logo_url, brand_primary_color')
@@ -62,11 +67,52 @@ export default function GirisPage() {
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <Link href="/" className="text-2xl font-bold text-primary">{brandName}</Link>
-            <h1 className="text-xl font-semibold text-gray-900 mt-6 mb-1">Tekrar hoş geldin</h1>
-            <p className="text-gray-500 text-sm">Hesabına giriş yap</p>
+            {isCustomDomain ? (
+              <>
+                <h1 className="text-xl font-semibold text-gray-900 mt-6 mb-1">{brandName} Portalı</h1>
+                <p className="text-gray-500 text-sm">Bu portala erişim sadece {brandName} ekibi içindir</p>
+              </>
+            ) : (
+              <>
+                <h1 className="text-xl font-semibold text-gray-900 mt-6 mb-1">Tekrar hoş geldin</h1>
+                <p className="text-gray-500 text-sm">Hesabına giriş yap</p>
+              </>
+            )}
           </div>
 
+          {isCustomDomain && (
+            <div className="flex bg-gray-100 rounded-xl p-1 mb-6">
+              <button
+                onClick={() => setTab('isletme')}
+                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
+                  tab === 'isletme' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                İşletme Girişi
+              </button>
+              <button
+                onClick={() => setTab('ekip')}
+                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
+                  tab === 'ekip' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Ekip Girişi
+              </button>
+            </div>
+          )}
+
           <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">
+            {isCustomDomain && tab === 'isletme' && (
+              <div className="bg-blue-50 text-blue-700 text-xs px-3 py-2 rounded-lg mb-4">
+                Yönetici yetkisi gerektirir. Sahip, müdür veya direktör hesabıyla giriş yapın.
+              </div>
+            )}
+            {isCustomDomain && tab === 'ekip' && (
+              <div className="bg-green-50 text-green-700 text-xs px-3 py-2 rounded-lg mb-4">
+                Ekip üyesi hesabıyla giriş yapın. Davet aldıysanız e-posta adresinizi kullanın.
+              </div>
+            )}
+
             <form onSubmit={handleGiris} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">E-posta</label>
@@ -113,12 +159,23 @@ export default function GirisPage() {
             </form>
           </div>
 
-          <p className="text-center text-sm text-gray-500 mt-6">
-            Hesabın yok mu?{' '}
-            <Link href="/kayit" className="text-primary font-medium hover:underline">
-              Ücretsiz kaydol
-            </Link>
-          </p>
+          {!isCustomDomain && (
+            <p className="text-center text-sm text-gray-500 mt-6">
+              Hesabın yok mu?{' '}
+              <Link href="/kayit" className="text-primary font-medium hover:underline">
+                Ücretsiz kaydol
+              </Link>
+            </p>
+          )}
+
+          {isCustomDomain && (
+            <p className="text-center text-sm text-gray-500 mt-6">
+              {brandName} ekibine katılmak için{' '}
+              <Link href="/kayit" className="text-primary font-medium hover:underline">
+                kayıt olun
+              </Link>
+            </p>
+          )}
         </div>
       </div>
     </>

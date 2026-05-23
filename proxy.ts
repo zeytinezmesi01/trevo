@@ -52,7 +52,7 @@ export async function proxy(request: NextRequest) {
     )
     const { data: profile } = await admin
       .from('profiles')
-      .select('id, brand_domain_status')
+      .select('id, tenant_id, brand_domain_status')
       .eq('brand_domain', domain)
       .eq('brand_domain_status', 'active')
       .maybeSingle()
@@ -64,6 +64,20 @@ export async function proxy(request: NextRequest) {
         sameSite: 'lax',
         maxAge: 60 * 60 * 24,
       })
+      if (profile.tenant_id) {
+        supabaseResponse.cookies.set('brand_tenant_id', profile.tenant_id as string, {
+          httpOnly: false,
+          sameSite: 'lax',
+          maxAge: 60 * 60 * 24,
+        })
+      }
+
+      // Custom domain'de anasayfa yerine markali giris sayfasini goster
+      if (request.nextUrl.pathname === '/') {
+        const loginUrl = request.nextUrl.clone()
+        loginUrl.pathname = '/giris'
+        return NextResponse.redirect(loginUrl)
+      }
     }
   }
 

@@ -32,3 +32,9 @@ export function readBrandFromCookie(): string | null {
   const match = document.cookie.match(/(?:^|;\s*)brand_profile_id=([^;]*)/)
   return match ? match[1] : null
 }
+
+export function readBrandTenantIdFromCookie(): string | null {
+  if (typeof document === 'undefined') return null
+  const match = document.cookie.match(/(?:^|;\s*)brand_tenant_id=([^;]*)/)
+  return match ? match[1] : null
+}
