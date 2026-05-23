@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
@@ -72,22 +72,22 @@ export default function EkipPage() {
       if (res.ok) {
         setForm({ email: '', role: 'member' })
         setModal(false)
-        setMsg('Davet gÃ¶nderildi!')
+        setMsg('Davet gönderildi!')
         setTimeout(() => setMsg(''), 3000)
         fetchData()
       } else {
-        setMsg(data.error || 'Hata oluÅŸtu')
+        setMsg(data.error || 'Hata oluştu')
         setTimeout(() => setMsg(''), 4000)
       }
     } catch {
-      setMsg('Sunucu hatasÄ±, tekrar deneyin')
+      setMsg('Sunucu hatası, tekrar deneyin')
       setTimeout(() => setMsg(''), 4000)
     }
     setSaving(false)
   }
 
   const handleRemove = async (memberId: string) => {
-    if (!confirm('Bu Ã¼yeyi Ã§Ä±karmak istediÄŸine emin misin?')) return
+    if (!confirm('Bu üyeyi çıkarmak istediğine emin misin?')) return
     await fetch('/api/tenant/members', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
@@ -102,7 +102,7 @@ export default function EkipPage() {
   }
 
   const roleLabel = (r: string) => {
-    const map: Record<string, string> = { owner: 'Sahip', admin: 'YÃ¶netici', member: 'Ãœye', viewer: 'GÃ¶rÃ¼ntÃ¼leyici' }
+    const map: Record<string, string> = { owner: 'Sahip', admin: 'Yönetici', member: 'Üye', viewer: 'Görüntüleyici' }
     return map[r] || r
   }
 
@@ -111,32 +111,32 @@ export default function EkipPage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold" style={{ color: '#0f172a' }}>Ekip</h1>
-          <p className="text-sm mt-1" style={{ color: '#64748b' }}>Ã‡alÄ±ÅŸanlarÄ±nÄ± davet et, birlikte yÃ¶netin</p>
+          <p className="text-sm mt-1" style={{ color: '#64748b' }}>Çalışanlarını davet et, birlikte yönetin</p>
         </div>
         <div className="flex items-center gap-3">
           {msg && <span className="text-sm font-medium" style={{ color: msg.includes('Hata') ? '#ef4444' : '#10b981' }}>{msg}</span>}
           <button onClick={() => setModal(true)} className="px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all" style={{ background: 'linear-gradient(135deg, var(--brand-primary, var(--brand-primary, #4f7dff)), var(--brand-primary-hover, var(--brand-primary-hover, #6a96ff)))', boxShadow: '0 2px 8px rgba(79,125,255,0.3)' }}>
-            + Ãœye Davet Et
+            + Üye Davet Et
           </button>
         </div>
       </div>
 
       {loading ? (
-        <div className="text-center py-16" style={{ color: '#94a3b8', fontSize: 14 }}>YÃ¼kleniyor...</div>
+        <div className="text-center py-16" style={{ color: '#94a3b8', fontSize: 14 }}>Yükleniyor...</div>
       ) : (
         <div className="space-y-6">
           {/* Members */}
           <div className="rounded-2xl border overflow-hidden" style={{ background: '#fff', borderColor: '#e8edf8' }}>
             <div style={{ padding: '16px 24px', borderBottom: '1px solid #e8edf8' }}>
-              <h2 className="font-semibold" style={{ fontSize: 15, color: '#0f172a' }}>Aktif Ãœyeler ({members.length})</h2>
+              <h2 className="font-semibold" style={{ fontSize: 15, color: '#0f172a' }}>Aktif Üyeler ({members.length})</h2>
             </div>
             {members.length === 0 ? (
-              <div className="text-center py-12" style={{ color: '#94a3b8', fontSize: 14 }}>HenÃ¼z Ã¼ye yok</div>
+              <div className="text-center py-12" style={{ color: '#94a3b8', fontSize: 14 }}>Henüz üye yok</div>
             ) : (
               <table className="w-full">
                 <thead style={{ background: '#f8fafc', borderBottom: '1px solid #e8edf8' }}>
                   <tr>
-                    <th style={{ padding: '10px 24px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ãœye</th>
+                    <th style={{ padding: '10px 24px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Üye</th>
                     <th style={{ padding: '10px 24px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Rol</th>
                     <th style={{ padding: '10px 24px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Durum</th>
                     <th style={{ padding: '10px 24px' }}></th>
@@ -148,9 +148,9 @@ export default function EkipPage() {
                       <td style={{ padding: '14px 24px' }}>
                         <div className="flex items-center gap-3">
                           <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(79,125,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14, color: 'var(--brand-primary, #4f7dff)' }}>
-                            {(m.email || 'Ãœ')[0].toUpperCase()}
+                            {(m.email || 'Ü')[0].toUpperCase()}
                           </div>
-                          <span style={{ fontWeight: 500, fontSize: 14, color: '#0f172a' }}>{m.email || 'â€”'}</span>
+                          <span style={{ fontWeight: 500, fontSize: 14, color: '#0f172a' }}>{m.email || '—'}</span>
                         </div>
                       </td>
                       <td style={{ padding: '14px 24px', fontSize: 13, color: '#64748b' }}>{roleLabel(m.role)}</td>
@@ -161,7 +161,7 @@ export default function EkipPage() {
                       </td>
                       <td style={{ padding: '14px 24px', textAlign: 'right' }}>
                         {m.role !== 'owner' && (
-                          <button onClick={() => handleRemove(m.id)} style={{ fontSize: 13, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}>Ã‡Ä±kar</button>
+                          <button onClick={() => handleRemove(m.id)} style={{ fontSize: 13, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}>Çıkar</button>
                         )}
                       </td>
                     </tr>
@@ -182,7 +182,7 @@ export default function EkipPage() {
                   <tr>
                     <th style={{ padding: '10px 24px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>E-posta</th>
                     <th style={{ padding: '10px 24px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Rol</th>
-                    <th style={{ padding: '10px 24px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>GÃ¶nderim</th>
+                    <th style={{ padding: '10px 24px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Gönderim</th>
                     <th style={{ padding: '10px 24px' }}></th>
                   </tr>
                 </thead>
@@ -193,7 +193,7 @@ export default function EkipPage() {
                       <td style={{ padding: '14px 24px', fontSize: 13, color: '#64748b' }}>{roleLabel(inv.role)}</td>
                       <td style={{ padding: '14px 24px', fontSize: 13, color: '#94a3b8' }}>{new Date(inv.created_at).toLocaleDateString('tr-TR')}</td>
                       <td style={{ padding: '14px 24px', textAlign: 'right' }}>
-                        <button onClick={() => handleCancelInvite(inv.id)} style={{ fontSize: 13, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer' }}>Ä°ptal</button>
+                        <button onClick={() => handleCancelInvite(inv.id)} style={{ fontSize: 13, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer' }}>İptal</button>
                       </td>
                     </tr>
                   ))}
@@ -208,7 +208,7 @@ export default function EkipPage() {
       {modal && (
         <div className="fixed inset-0 flex items-center justify-center z-50 px-4" style={{ background: 'rgba(0,0,0,0.4)' }}>
           <div className="rounded-2xl p-6 w-full max-w-md" style={{ background: '#fff', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
-            <h2 className="text-lg font-semibold mb-4" style={{ color: '#0f172a' }}>Ãœye Davet Et</h2>
+            <h2 className="text-lg font-semibold mb-4" style={{ color: '#0f172a' }}>Üye Davet Et</h2>
             <div className="space-y-3">
               <div>
                 <label className="block text-xs font-medium mb-1.5" style={{ color: '#64748b' }}>E-posta *</label>
@@ -222,16 +222,16 @@ export default function EkipPage() {
                 <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}
                   className="w-full rounded-xl px-4 py-2.5 text-sm border focus:outline-none focus:ring-2"
                   style={{ borderColor: '#e2e8f0', color: '#0f172a' }}>
-                  <option value="admin">YÃ¶netici</option>
-                  <option value="member">Ãœye</option>
-                  <option value="viewer">GÃ¶rÃ¼ntÃ¼leyici</option>
+                  <option value="admin">Yönetici</option>
+                  <option value="member">Üye</option>
+                  <option value="viewer">Görüntüleyici</option>
                 </select>
               </div>
             </div>
             <div className="flex gap-2 mt-4">
-              <button onClick={() => setModal(false)} className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors" style={{ background: '#f1f5f9', color: '#64748b' }}>Ä°ptal</button>
+              <button onClick={() => setModal(false)} className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors" style={{ background: '#f1f5f9', color: '#64748b' }}>İptal</button>
               <button onClick={handleInvite} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-50" style={{ background: 'linear-gradient(135deg, var(--brand-primary, #4f7dff), var(--brand-primary-hover, #6a96ff))' }}>
-                {saving ? 'GÃ¶nderiliyor...' : 'Davet GÃ¶nder'}
+                {saving ? 'Gönderiliyor...' : 'Davet Gönder'}
               </button>
             </div>
           </div>

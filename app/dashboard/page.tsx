@@ -1,4 +1,4 @@
-﻿import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 import { getTenantContext } from '@/lib/tenant/auth'
 import Link from 'next/link'
 import SetupChecklist from '@/components/setup-checklist'
@@ -15,7 +15,7 @@ export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   const { tenantId } = await getTenantContext()
-  const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'KullanÄ±cÄ±'
+  const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Kullanıcı'
 
   const [
     { count: clientCount },
@@ -39,7 +39,7 @@ export default async function DashboardPage() {
 
   const stats = [
     {
-      color: 'green', label: 'MÃ¼ÅŸteri', value: clientCount ?? 0, trend: '+3',
+      color: 'green', label: 'Müşteri', value: clientCount ?? 0, trend: '+3',
       iconBg: '#ecfdf5', iconColor: '#10b981',
       icon: (
         <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="22" height="22">
@@ -58,7 +58,7 @@ export default async function DashboardPage() {
       ),
     },
     {
-      color: 'purple', label: 'Ekip Ãœyesi', value: teamCount ?? 0, trend: null,
+      color: 'purple', label: 'Ekip Üyesi', value: teamCount ?? 0, trend: null,
       iconBg: '#f5f3ff', iconColor: '#8b5cf6',
       icon: (
         <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="22" height="22">
@@ -82,17 +82,17 @@ export default async function DashboardPage() {
   const quickActions = [
     {
       href: '/dashboard/dosyalar', iconBg: '#eef2ff', iconColor: 'var(--brand-primary, #4f7dff)',
-      title: 'Dosya YÃ¼kle', desc: 'MÃ¼ÅŸteriye dosya gÃ¶nder',
+      title: 'Dosya Yükle', desc: 'Müşteriye dosya gönder',
       icon: <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="20" height="20"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>,
     },
     {
       href: '/dashboard/hizmetler', iconBg: '#fffbeb', iconColor: '#f59e0b',
-      title: 'Hizmet Ekle', desc: 'Paketini oluÅŸtur',
+      title: 'Hizmet Ekle', desc: 'Paketini oluştur',
       icon: <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="20" height="20"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>,
     },
     {
       href: '/dashboard/musteriler', iconBg: '#ecfdf5', iconColor: '#10b981',
-      title: 'MÃ¼ÅŸteri Ekle', desc: 'Yeni mÃ¼ÅŸteri davet et',
+      title: 'Müşteri Ekle', desc: 'Yeni müşteri davet et',
       icon: <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="20" height="20"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>,
     },
   ]
@@ -111,11 +111,11 @@ export default async function DashboardPage() {
     iconColor: 'var(--brand-primary, #4f7dff)',
   }))
 
-  // Aktiviteler (en son 5 fatura + ekip Ã¼yeleri)
+  // Aktiviteler (en son 5 fatura + ekip üyeleri)
   const invoiceActivities = (invoicesData || []).map((inv) => ({
     bg: '#eef2ff',
     color: 'var(--brand-primary, #4f7dff)',
-    text: <><strong>{inv.invoice_number}</strong> faturasÄ± oluÅŸturuldu â€” {inv.client_name}</>,
+    text: <><strong>{inv.invoice_number}</strong> faturası oluşturuldu — {inv.client_name}</>,
     time: inv.created_at ? new Date(inv.created_at).toLocaleDateString('tr-TR') : '',
     icon: <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" width="15" height="15"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>,
   }))
@@ -123,14 +123,14 @@ export default async function DashboardPage() {
   const memberActivities = (membersData || []).filter(m => m.joined_at).map((m) => ({
     bg: '#f5f3ff',
     color: '#8b5cf6',
-    text: <>Ekip Ã¼yesi {m.role} rolÃ¼yle katÄ±ldÄ±</>,
+    text: <>Ekip üyesi {m.role} rolüyle katıldı</>,
     time: m.joined_at ? new Date(m.joined_at).toLocaleDateString('tr-TR') : '',
     icon: <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" width="15" height="15"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
   }))
 
   const activities = [...invoiceActivities, ...memberActivities].slice(0, 5)
 
-  // MÃ¼ÅŸteriler (son 5)
+  // Müşteriler (son 5)
   const { data: topClients } = await supabase
     .from('clients')
     .select('id, name, company, created_at')
@@ -142,7 +142,7 @@ export default async function DashboardPage() {
     initials: (c.name || '??').slice(0, 2).toUpperCase(),
     gradient: ['linear-gradient(135deg,var(--brand-primary, #4f7dff),var(--brand-primary-hover, #7aa0ff))', 'linear-gradient(135deg,#8b5cf6,#a78bfa)', 'linear-gradient(135deg,#f59e0b,#fbbf24)', 'linear-gradient(135deg,#10b981,#34d399)', 'linear-gradient(135deg,#ef4444,#f87171)'][i % 5],
     name: c.name,
-    meta: c.company || 'MÃ¼ÅŸteri',
+    meta: c.company || 'Müşteri',
     dot: '#10b981',
   }))
 
@@ -152,10 +152,10 @@ export default async function DashboardPage() {
       <div className="flex items-start justify-between gap-4 mb-6">
         <div>
           <div style={{ fontFamily: 'var(--font-display), Plus Jakarta Sans, sans-serif', fontSize: '24px', fontWeight: 800, letterSpacing: '-0.03em', color: '#0f172a', lineHeight: 1.2 }}>
-            Merhaba, {userName} ðŸ‘‹
+            Merhaba, {userName} 👋
           </div>
           <div style={{ fontSize: '13.5px', color: '#64748b', marginTop: '4px' }}>
-            Ä°ÅŸte bugÃ¼nkÃ¼ Ã¶zet â€” {today}
+            İşte bugünkü özet — {today}
           </div>
         </div>
         <div className="flex gap-2.5">
@@ -170,7 +170,7 @@ export default async function DashboardPage() {
             style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'var(--brand-primary, var(--brand-primary, #4f7dff))', color: 'white', fontFamily: 'var(--font-display), Plus Jakarta Sans, sans-serif', fontSize: '13px', fontWeight: 600, padding: '9px 16px', borderRadius: '10px', boxShadow: '0 2px 8px rgba(79,125,255,0.3)', textDecoration: 'none' }}
           >
             <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            MÃ¼ÅŸteri Ekle
+            Müşteri Ekle
           </Link>
         </div>
       </div>
@@ -198,7 +198,7 @@ export default async function DashboardPage() {
 
       {/* Quick Actions */}
       <div className="flex items-center justify-between mb-3.5">
-        <div style={{ fontFamily: 'var(--font-display), Plus Jakarta Sans, sans-serif', fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>HÄ±zlÄ± Ä°ÅŸlemler</div>
+        <div style={{ fontFamily: 'var(--font-display), Plus Jakarta Sans, sans-serif', fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>Hızlı İşlemler</div>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px', marginBottom: '24px' }}>
         {quickActions.map((qa) => (
@@ -225,13 +225,13 @@ export default async function DashboardPage() {
         <div>
           <div className="flex items-center justify-between mb-3.5">
             <div style={{ fontFamily: 'var(--font-display), Plus Jakarta Sans, sans-serif', fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>Son Dosyalar</div>
-            <Link href="/dashboard/dosyalar" style={{ fontSize: '12.5px', color: 'var(--brand-primary, var(--brand-primary, #4f7dff))', fontWeight: 500, textDecoration: 'none' }}>TÃ¼mÃ¼nÃ¼ gÃ¶r â†’</Link>
+            <Link href="/dashboard/dosyalar" style={{ fontSize: '12.5px', color: 'var(--brand-primary, var(--brand-primary, #4f7dff))', fontWeight: 500, textDecoration: 'none' }}>Tümünü gör →</Link>
           </div>
           <div style={{ ...card, overflow: 'hidden' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
-                  {['Dosya AdÄ±', 'Boyut', 'MÃ¼ÅŸteri', 'Tarih', 'Ä°ndir'].map((h, i) => (
+                  {['Dosya Adı', 'Boyut', 'Müşteri', 'Tarih', 'İndir'].map((h, i) => (
                     <th key={h} style={{ fontSize: '11.5px', fontWeight: 600, letterSpacing: '0.05em', color: '#64748b', textTransform: 'uppercase', padding: '10px 20px', textAlign: i === 4 ? 'center' : 'left', background: '#fafbff', borderBottom: '1px solid #e8edf8' }}>
                       {h}
                     </th>
@@ -275,7 +275,7 @@ export default async function DashboardPage() {
           <div>
             <div className="flex items-center justify-between mb-3.5">
               <div style={{ fontFamily: 'var(--font-display), Plus Jakarta Sans, sans-serif', fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>Son Aktivite</div>
-              <span style={{ fontSize: '12.5px', color: 'var(--brand-primary, var(--brand-primary, #4f7dff))', fontWeight: 500, cursor: 'pointer' }}>TÃ¼mÃ¼ â†’</span>
+              <span style={{ fontSize: '12.5px', color: 'var(--brand-primary, var(--brand-primary, #4f7dff))', fontWeight: 500, cursor: 'pointer' }}>Tümü →</span>
             </div>
             <div style={{ ...card, overflow: 'hidden' }}>
               {activities.map((a, i) => (
@@ -296,11 +296,11 @@ export default async function DashboardPage() {
           <div>
             <div className="flex items-center justify-between mb-3.5">
               <div style={{ fontFamily: 'var(--font-display), Plus Jakarta Sans, sans-serif', fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>Depolama</div>
-              <span style={{ fontSize: '12.5px', color: 'var(--brand-primary, var(--brand-primary, #4f7dff))', fontWeight: 500, cursor: 'pointer' }}>YÃ¼kselt â†’</span>
+              <span style={{ fontSize: '12.5px', color: 'var(--brand-primary, var(--brand-primary, #4f7dff))', fontWeight: 500, cursor: 'pointer' }}>Yükselt →</span>
             </div>
             <div style={{ ...card, padding: '18px' }}>
               <div className="flex items-center justify-between mb-2.5">
-                <span style={{ fontSize: '13px', color: '#64748b' }}>KullanÄ±lan alan</span>
+                <span style={{ fontSize: '13px', color: '#64748b' }}>Kullanılan alan</span>
                 <span style={{ fontFamily: 'var(--font-display), Plus Jakarta Sans, sans-serif', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>23.4 / 100 GB</span>
               </div>
               <div style={{ height: '6px', background: '#e8edf8', borderRadius: '4px', overflow: 'hidden' }}>
@@ -308,9 +308,9 @@ export default async function DashboardPage() {
               </div>
               <div className="flex justify-between mt-2.5">
                 {[
-                  { color: 'var(--brand-primary, #4f7dff)', label: 'PDF / DÃ¶kÃ¼man' },
-                  { color: '#8b5cf6', label: 'GÃ¶rsel' },
-                  { color: '#10b981', label: 'DiÄŸer' },
+                  { color: 'var(--brand-primary, #4f7dff)', label: 'PDF / Döküman' },
+                  { color: '#8b5cf6', label: 'Görsel' },
+                  { color: '#10b981', label: 'Diğer' },
                 ].map((l) => (
                   <div key={l.label} className="flex items-center gap-1" style={{ fontSize: '11.5px', color: '#64748b' }}>
                     <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: l.color }} />
@@ -320,14 +320,14 @@ export default async function DashboardPage() {
               </div>
               {/* Mini chart */}
               <div style={{ marginTop: '16px', borderTop: '1px solid #e8edf8', paddingTop: '14px' }}>
-                <div style={{ fontSize: '11.5px', color: '#64748b', marginBottom: '8px', fontWeight: 500 }}>Bu hafta yÃ¼kleme</div>
+                <div style={{ fontSize: '11.5px', color: '#64748b', marginBottom: '8px', fontWeight: 500 }}>Bu hafta yükleme</div>
                 <div style={{ display: 'flex', alignItems: 'flex-end', gap: '3px', height: '36px' }}>
                   {[40, 65, 30, 85, 100, 55, 70].map((h, i) => (
                     <div key={i} className={`db-mini-bar${i === 4 ? ' today' : ''}`} style={{ height: `${h}%` }} />
                   ))}
                 </div>
                 <div className="flex justify-between mt-1">
-                  {['Pzt','Sal','Ã‡ar','Per','Bug','Cum','Cmt'].map((d, i) => (
+                  {['Pzt','Sal','Çar','Per','Bug','Cum','Cmt'].map((d, i) => (
                     <span key={d} style={{ fontSize: '10px', color: i === 4 ? 'var(--brand-primary, #4f7dff)' : '#64748b', fontWeight: i === 4 ? 600 : 400 }}>{d}</span>
                   ))}
                 </div>
@@ -337,10 +337,10 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Aktif MÃ¼ÅŸteriler */}
+      {/* Aktif Müşteriler */}
       <div className="flex items-center justify-between mb-3.5">
-        <div style={{ fontFamily: 'var(--font-display), Plus Jakarta Sans, sans-serif', fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>Aktif MÃ¼ÅŸteriler</div>
-        <Link href="/dashboard/musteriler" style={{ fontSize: '12.5px', color: 'var(--brand-primary, #4f7dff)', fontWeight: 500, textDecoration: 'none' }}>TÃ¼mÃ¼nÃ¼ gÃ¶r â†’</Link>
+        <div style={{ fontFamily: 'var(--font-display), Plus Jakarta Sans, sans-serif', fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>Aktif Müşteriler</div>
+        <Link href="/dashboard/musteriler" style={{ fontSize: '12.5px', color: 'var(--brand-primary, #4f7dff)', fontWeight: 500, textDecoration: 'none' }}>Tümünü gör →</Link>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
         {clients.map((c) => (
