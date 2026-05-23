@@ -43,6 +43,8 @@ const nextConfig: NextConfig = {
     if (supabaseUrl) {
       const origin = new URL(supabaseUrl).origin;
       directives['connect-src'].push(origin);
+      // Supabase Realtime WebSocket bağlantısı (wss://)
+      directives['connect-src'].push(origin.replace('https://', 'wss://'));
     }
 
     if (r2PublicUrl) {
