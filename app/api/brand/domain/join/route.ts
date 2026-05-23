@@ -59,18 +59,37 @@ export async function POST(request: Request) {
       })
   }
 
-  // Profili guncelle
+  // Profili KEY'in tenant'ina tasi (trigger'in auto-created tenant'ini ezer)
   const { data: profile } = await admin
     .from('profiles')
     .select('tenant_id')
     .eq('id', user.id)
     .maybeSingle()
 
-  if (!profile?.tenant_id) {
+  const oldTenantId = profile?.tenant_id
+
+  await admin
+    .from('profiles')
+    .update({ tenant_id: tenantId, role: 'member' })
+    .eq('id', user.id)
+
+  // Trigger'in auto-created bos tenant'ini temizle
+  if (oldTenantId && oldTenantId !== tenantId) {
     await admin
-      .from('profiles')
-      .update({ tenant_id: tenantId, role: 'member' })
-      .eq('id', user.id)
+      .from('tenant_members')
+      .delete()
+      .eq('tenant_id', oldTenantId)
+      .eq('user_id', user.id)
+    const { count } = await admin
+      .from('tenant_members')
+      .select('id', { count: 'exact', head: true })
+      .eq('tenant_id', oldTenantId)
+    if (count === 0) {
+      await admin
+        .from('tenants')
+        .delete()
+        .eq('id', oldTenantId)
+    }
   }
 
   return NextResponse.json({ status: 'joined', tenantId, tenantName: tenant.name })
