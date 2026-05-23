@@ -47,15 +47,34 @@ export default function GirisPage() {
     setLoading(true)
     setError('')
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { error, data } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
       setError('E-posta veya şifre hatalı.')
       setLoading(false)
-    } else {
-      router.push('/dashboard')
-      router.refresh()
+      return
     }
+
+    // Custom domain'de ise tenant uyelik kontrolu
+    const domainTenantId = readBrandTenantIdFromCookie()
+    if (domainTenantId && data.user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('tenant_id')
+        .eq('id', data.user.id)
+        .maybeSingle()
+
+      if (!profile?.tenant_id || profile.tenant_id !== domainTenantId) {
+        // Bu domain'in tenant'ina ait degil -> cikis yap
+        await supabase.auth.signOut()
+        setError('Bu portala erişim yetkiniz yok. Ekip yöneticinizden davet isteyin.')
+        setLoading(false)
+        return
+      }
+    }
+
+    router.push('/dashboard')
+    router.refresh()
   }
 
   const brandName = brand.brandName || 'Trevo'
