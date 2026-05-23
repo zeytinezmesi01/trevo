@@ -23,6 +23,7 @@ export default function AyarlarPage() {
   const [einvoiceEnabled, setEinvoiceEnabled] = useState(false)
   const [provisioning, setProvisioning] = useState(false)
   const [provisionMsg, setProvisionMsg] = useState('')
+  const [userRole, setUserRole] = useState('')
   const supabase = createClient()
 
   useEffect(() => {
@@ -32,6 +33,7 @@ export default function AyarlarPage() {
       setEmail(user.email || '')
       const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
       if (data) {
+        setUserRole(data.role || '')
         setForm({
           full_name: data.full_name || '',
           company_name: data.company_name || '',
@@ -142,7 +144,8 @@ export default function AyarlarPage() {
           </div>
         </div>
 
-        {/* ŞİRKET */}
+        {/* ŞİRKET — sadece owner ve admin */}
+        {(userRole === 'owner' || userRole === 'admin') && (
         <div className="bg-white rounded-2xl border border-gray-100 p-6">
           <h2 className="text-base font-semibold text-gray-900 mb-4">Şirket Bilgileri</h2>
           <p className="text-xs text-gray-500 mb-4">Fatura ve e-Belge için yasal şirket bilgileri.</p>
@@ -218,6 +221,7 @@ export default function AyarlarPage() {
             </div>
           </div>
         </div>
+        )}
 
         {/* E-FATURA ETKİNLEŞTİRME API */}
 
@@ -233,14 +237,17 @@ export default function AyarlarPage() {
           {success && <span className="text-green-600 text-sm">✓ Kaydedildi</span>}
         </div>
 
-        {/* AYIRICI */}
+        {/* MARKA — sadece owner */}
+        {userRole === 'owner' && (
         <div className="border-t border-gray-100 pt-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-1">Marka / Beyaz Etiket</h2>
           <p className="text-gray-500 text-sm mb-6">Kendi markanı yansıt. Logo, renk ve özel alan adı.</p>
           <BrandSettingsForm />
         </div>
+        )}
 
-        {/* E-FATURA */}
+        {/* E-FATURA — sadece owner */}
+        {userRole === 'owner' && (
         <div className="bg-white rounded-2xl border border-gray-100 p-6">
           <h2 className="text-base font-semibold text-gray-900 mb-1">e-Fatura / e-Arşiv</h2>
           <p className="text-gray-500 text-sm mb-4">Faturalarını GİB nezdinde resmi e-Belge olarak ilet.</p>
@@ -290,8 +297,10 @@ export default function AyarlarPage() {
             )}
           </div>
         </div>
+        )}
 
-        {/* HESAP SİL */}
+        {/* HESAP SİL — sadece owner */}
+        {userRole === 'owner' && (
         <div className="border-t border-red-100 pt-6">
           <h2 className="text-lg font-semibold text-red-600 mb-1">Tehlike Bölgesi</h2>
           <p className="text-gray-500 text-sm mb-4">Hesabını ve tüm verilerini kalıcı olarak sil. Bu işlem geri alınamaz.</p>
@@ -321,6 +330,7 @@ export default function AyarlarPage() {
             {deleting ? 'Siliniyor...' : 'Hesabı Kalıcı Olarak Sil'}
           </button>
         </div>
+        )}
       </div>
     </div>
   )

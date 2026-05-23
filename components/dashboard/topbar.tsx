@@ -1,7 +1,10 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
+
 export default function DashboardTopbar({ userName }: { userName: string }) {
   const initials = userName.slice(0, 2).toUpperCase() || 'HB'
+  const router = useRouter()
 
   return (
     <header
@@ -95,6 +98,7 @@ export default function DashboardTopbar({ userName }: { userName: string }) {
 
         {/* Settings */}
         <button
+          onClick={() => router.push('/dashboard/ayarlar')}
           className="flex items-center justify-center transition-all"
           style={{
             width: '36px', height: '36px', borderRadius: '10px',

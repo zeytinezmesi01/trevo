@@ -240,7 +240,7 @@ export default function DashboardSidebar({
         </div>
 
         {/* Ayarlar */}
-        {hasMinRole(userRole, 'admin') && (() => {
+        {hasMinRole(userRole, 'viewer') && (() => {
           const active = isActive('/dashboard/ayarlar') && !pathname.startsWith('/dashboard/ayarlar/api')
           return (
             <Link
