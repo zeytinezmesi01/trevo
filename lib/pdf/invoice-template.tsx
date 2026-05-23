@@ -59,6 +59,28 @@ function fmt(n: number): string {
   return Number(n).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₺'
 }
 
+/**
+ * Beklenen invoice alanlari (Record<string, unknown> ile calisir):
+ * - invoice_number: string — fatura numarası
+ * - invoice_date: string — ISO tarih (YYYY-MM-DD)
+ * - due_date?: string — son ödeme tarihi
+ * - client_name: string — alıcı adı
+ * - client_company?: string — alıcı şirket
+ * - client_tax_office?: string — alıcı vergi dairesi
+ * - client_tax_number?: string — alıcı vergi numarası
+ * - issuer_name?: string — düzenleyen adı
+ * - issuer_tax_office?: string — düzenleyen vergi dairesi
+ * - issuer_tax_number?: string — düzenleyen vergi numarası
+ * - issuer_address?: string — düzenleyen adresi
+ * - brand_name?: string — marka adı
+ * - bank_iban?: string — banka IBAN
+ * - subtotal: number — ara toplam
+ * - kdv_rate: number — KDV oranı
+ * - kdv_amount: number — KDV tutarı
+ * - tevkifat_amount?: number — tevkifat tutarı
+ * - total: number — genel toplam
+ * - items: Array<{description, quantity, unit, unit_price, kdv_rate, line_total}>
+ */
 export default function InvoicePDF({ invoice }: { invoice: Record<string, unknown> }) {
   const v = (k: string, fallback = '') => String(invoice[k] || fallback)
   const n = (k: string, fallback = 0) => Number(invoice[k] || fallback)

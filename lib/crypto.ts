@@ -28,7 +28,7 @@ export function decryptSecret(stored: string): string {
   if (!stored) return ''
   // Şifrelenmemiş (eski kayıt) → düz metin kabul et (geriye dönük uyumluluk)
   if (!stored.includes(':')) {
-    console.warn('decryptSecret: şifrelenmemiş eski format, düz metin döndürülüyor')
+    console.warn('Legacy plaintext secret detected, re-encrypt recommended')
     return stored
   }
   const parts = stored.split(':')

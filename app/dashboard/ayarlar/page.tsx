@@ -320,7 +320,11 @@ export default function AyarlarPage() {
               setDeleting(true)
               setError('')
               try {
-                const res = await fetch('/api/account/delete', { method: 'POST' })
+                const res = await fetch('/api/account/delete', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ email }),
+                })
                 if (!res.ok) {
                   const data = await res.json().catch(() => ({}))
                   setError(data.error || 'Hesap silinemedi.')

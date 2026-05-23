@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Brand, DEFAULT_BRAND } from '@/lib/types/brand'
+import { DEFAULT_DOMAINS } from '@/lib/constants'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 function buildBrandFromProfile(profile: Record<string, unknown> | null): Brand {
@@ -24,7 +25,7 @@ const CACHE_TTL = 60_000 // 1 minute
 
 export async function getBrandByDomain(host: string): Promise<Brand> {
   const domain = host.replace(/:\d+$/, '').replace(/^www\./, '')
-  const isDefaultDomain = ['localhost', 'trevo-delta.vercel.app'].some(
+  const isDefaultDomain = DEFAULT_DOMAINS.some(
     (d) => domain === d || domain.endsWith(`.${d}`)
   )
   if (isDefaultDomain) return { ...DEFAULT_BRAND }
@@ -96,7 +97,7 @@ export async function generatePortalBrand(
   host: string
 ): Promise<Brand> {
   const domain = host.replace(/:\d+$/, '').replace(/^www\./, '')
-  const isDefaultDomain = ['localhost', 'trevo-delta.vercel.app'].some(
+  const isDefaultDomain = DEFAULT_DOMAINS.some(
     (d) => domain === d || domain.endsWith(`.${d}`)
   )
   if (isDefaultDomain) return { ...DEFAULT_BRAND }

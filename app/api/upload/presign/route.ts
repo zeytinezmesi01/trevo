@@ -32,24 +32,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Bu dosya türüne izin verilmiyor' }, { status: 400 })
   }
 
-  // fileName temizleme: güvenli olmayan karakterleri kaldır, sadece ASCII + tire + alt çizgi + nokta kalsın
-  const safeName = fileName
-    ? fileName
-        .replace(/[/\\]/g, '_')
-        .replace(/\.\./g, '')
-        .replace(/\s+/g, '-')
-        .normalize('NFD')
-        .replace(/[̀-ͯ]/g, '')
-        .replace(/[^a-zA-Z0-9._-]/g, '')
-        .replace(/-+/g, '-')
-        .replace(/^[-.]+/, '')
-        .replace(/[-.]+$/, '')
-    : ''
-
-
-  if (!safeName) {
+  if (!fileName || typeof fileName !== 'string' || !fileName.trim()) {
     return NextResponse.json({ error: 'Geçersiz dosya adı' }, { status: 400 })
   }
+
+  // Depolama anahtarı için: uzantıyı orijinal addan al, geri kalanı UUID ile oluştur.
+  // Böylece Türkçe/özel karakterler yüzünden dosya adı kaybolmaz.
+  const ext = fileName.split('.').pop()?.toLowerCase()?.replace(/[^a-z0-9]/g, '') || 'bin'
+  const safeName = `${Date.now()}-${crypto.randomUUID()}.${ext}`
 
   // Sunucu tarafı boyut limiti: 50 MB
   if (fileSize > 50 * 1024 * 1024) {
@@ -68,10 +58,9 @@ export async function POST(request: Request) {
     if (!clientCheck) return NextResponse.json({ error: 'Geçersiz müşteri' }, { status: 403 })
   }
 
-  const ext = safeName.split('.').pop()
   // Klasör mantığı: marka logosu → brand/, müşteri dosyası → clientId/, diğer → genel/
   const folder = purpose === 'brand' ? 'brand' : (clientId || 'genel')
-  const key = `${ctx.tenantId}/${folder}/${Date.now()}-${safeName}`
+  const key = `${ctx.tenantId}/${folder}/${safeName}`
 
   const signedUrl = await getSignedUrl(
     r2Client,

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { clearBrandCache } from '@/lib/brand/server'
 
 const ALLOWED_FIELDS = [
   'full_name',
@@ -95,6 +96,12 @@ export async function PATCH(request: Request) {
   if (error) {
     console.error('Profil güncelleme hatası:', error)
     return NextResponse.json({ error: 'Güncelleme sırasında bir hata oluştu' }, { status: 500 })
+  }
+
+  // Brand alanlari guncellendiyse cache'i temizle
+  const brandFields = ['brand_name', 'brand_logo_url', 'brand_primary_color']
+  if (Object.keys(update).some((k) => (brandFields as string[]).includes(k))) {
+    clearBrandCache(user.id)
   }
 
   return NextResponse.json({ ok: true })

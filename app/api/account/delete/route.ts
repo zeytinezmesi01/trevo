@@ -14,9 +14,8 @@ export async function POST(request: Request) {
 
   // E-posta onayı: kazara silmeyi engelle
   const body = await request.json().catch(() => null)
-  const confirmEmail = body?.email
-  if (!confirmEmail || confirmEmail !== user.email) {
-    return NextResponse.json({ error: 'E-posta onayı gerekli. Hesabınızı silmek için e-posta adresinizi girin.' }, { status: 400 })
+  if (!body?.confirmEmail || body.confirmEmail !== user.email) {
+    return NextResponse.json({ error: 'Email onayi gerekli' }, { status: 400 })
   }
 
   const admin = createAdminClient()

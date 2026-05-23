@@ -52,7 +52,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL
+  if (!baseUrl) {
+    return NextResponse.json({ error: 'APP_URL yapilandirilmamis' }, { status: 500 })
+  }
   const inviteUrl = `${baseUrl}/kayit?invite=${token}`
 
   await sendTeamInvitation({
