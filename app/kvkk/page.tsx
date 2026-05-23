@@ -22,7 +22,7 @@ export default function KvkkPage() {
           <p>Verileriniz hesabınız aktif olduğu sürece saklanır. Hesap silindiğinde 30 gün içinde imha edilir.</p>
 
           <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: 18, fontWeight: 700, color: '#fff', margin: '28px 0 12px' }}>5. Haklarınız</h2>
-          <p>KVKK Madde 11 kapsamında; verilerinize erişme, düzeltme, silme ve işlemeye itiraz etme haklarına sahipsiniz. Talepleriniz için: <a href="mailto:kvkk@trevo.app" style={{ color: '#7aa0ff' }}>kvkk@trevo.app</a></p>
+          <p>KVKK Madde 11 kapsamında; verilerinize erişme, düzeltme, silme ve işlemeye itiraz etme haklarına sahipsiniz. Talepleriniz için: <a href="mailto:kvkk@trevo-delta.vercel.app" style={{ color: '#7aa0ff' }}>kvkk@trevo-delta.vercel.app</a></p>
         </div>
       </div>
     </div>

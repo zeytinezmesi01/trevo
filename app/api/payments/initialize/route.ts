@@ -109,7 +109,7 @@ export async function POST(request: Request) {
         id: client.id,
         name: firstName,
         surname: lastName,
-        email: client.email || `${client.id}@portal.trevo.app`,
+        email: client.email || `${client.id}@client.trevo.local`,
         identityNumber: client.tax_number || client.id.slice(0, 11),
         address: client.address || 'Belirtilmemiş',
         city: client.city || 'İstanbul',

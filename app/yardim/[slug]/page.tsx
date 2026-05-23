@@ -94,7 +94,7 @@ export default async function YardimMakalePage({
         <div style={{ maxWidth: '720px', margin: '0 auto', textAlign: 'center' }}>
           <p style={{ color: '#94a3b8', fontSize: '13px' }}>
             Sorunuz mu var?{' '}
-            <a href="mailto:destek@trevo.app" style={{ color: '#4f7dff', textDecoration: 'none' }}>destek@trevo.app</a>
+            <a href="mailto:destek@trevo-delta.vercel.app" style={{ color: '#4f7dff', textDecoration: 'none' }}>destek@trevo-delta.vercel.app</a>
           </p>
         </div>
       </div>

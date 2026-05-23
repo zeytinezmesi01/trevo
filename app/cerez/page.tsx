@@ -32,7 +32,7 @@ export default function CerezPage() {
           <p>Tarayıcı ayarlarınızdan çerezleri silebilir veya engelleyebilirsiniz. Zorunlu çerezler engellendiğinde platform düzgün çalışmayabilir.</p>
 
           <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: 18, fontWeight: 700, color: '#fff', margin: '28px 0 12px' }}>4. İletişim</h2>
-          <p>Sorularınız için: <a href="mailto:kvkk@trevo.app" style={{ color: '#7aa0ff' }}>kvkk@trevo.app</a></p>
+          <p>Sorularınız için: <a href="mailto:kvkk@trevo-delta.vercel.app" style={{ color: '#7aa0ff' }}>kvkk@trevo-delta.vercel.app</a></p>
         </div>
       </div>
     </div>

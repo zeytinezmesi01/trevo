@@ -10,7 +10,7 @@ export default function IletisimPage() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20, marginBottom: 40 }}>
           {[
-            { icon: '📧', label: 'E-posta', value: 'bilgi@trevo.app', href: 'mailto:bilgi@trevo.app' },
+            { icon: '📧', label: 'E-posta', value: 'bilgi@trevo-delta.vercel.app', href: 'mailto:bilgi@trevo-delta.vercel.app' },
             { icon: '📍', label: 'Adres', value: 'Levent, Beşiktaş, İstanbul', href: null },
             { icon: '📞', label: 'Telefon', value: '+90 (212) 555 00 00', href: 'tel:+902125550000' },
           ].map((item) => (

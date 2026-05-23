@@ -18,7 +18,7 @@ export default function KariyerPage() {
         {jobs.length === 0 ? (
           <div style={{ textAlign: 'center', padding: 60, borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid #1a2236' }}>
             <p style={{ color: '#8a9ab5', fontSize: 15 }}>Şu anda açık pozisyonumuz bulunmuyor.</p>
-            <p style={{ color: '#8a9ab5', fontSize: 13, marginTop: 8 }}>Yine de CV&apos;nizi <a href="mailto:ik@trevo.app" style={{ color: '#7aa0ff' }}>ik@trevo.app</a> adresine gönderebilirsiniz.</p>
+            <p style={{ color: '#8a9ab5', fontSize: 13, marginTop: 8 }}>Yine de CV&apos;nizi <a href="mailto:ik@trevo-delta.vercel.app" style={{ color: '#7aa0ff' }}>ik@trevo-delta.vercel.app</a> adresine gönderebilirsiniz.</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -34,7 +34,7 @@ export default function KariyerPage() {
                     <span>{job.loc}</span>
                   </div>
                 </div>
-                <a href="mailto:ik@trevo.app" style={{ padding: '8px 20px', borderRadius: 8, background: 'rgba(79,125,255,0.15)', color: '#7aa0ff', fontSize: 13, fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap' }}>Başvur</a>
+                <a href="mailto:ik@trevo-delta.vercel.app" style={{ padding: '8px 20px', borderRadius: 8, background: 'rgba(79,125,255,0.15)', color: '#7aa0ff', fontSize: 13, fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap' }}>Başvur</a>
               </div>
             ))}
           </div>

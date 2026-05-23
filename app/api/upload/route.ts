@@ -124,7 +124,7 @@ export async function POST(request: Request) {
       .single()
 
     if (client?.email) {
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://trevo.app'
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://trevo-delta.vercel.app'
 
       // Fetch brand for email
       const { data: profile } = await supabase

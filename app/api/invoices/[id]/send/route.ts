@@ -6,7 +6,7 @@ import { generateAndStoreInvoicePDF } from '@/lib/pdf/generate-invoice'
 import { Resend } from 'resend'
 import { escapeHtml } from '@/lib/escape-html'
 
-const FROM = process.env.RESEND_FROM_EMAIL || 'Trevo <bildirim@trevo.app>'
+const FROM = process.env.RESEND_FROM_EMAIL || 'Trevo <bildirim@trevo-delta.vercel.app>'
 
 export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const ctx = await getTenantContext()

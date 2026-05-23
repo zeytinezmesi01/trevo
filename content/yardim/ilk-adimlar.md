@@ -7,7 +7,7 @@ Trevo'yu kendi markanızla kullanmak için bir domain bağlamanız gerekir.
 - **Ayarlar > Marka** sayfasına gidin
 - "Domain" alanına domain'inizi yazın (örnek: `fatura.ajansim.com`)
 - DNS yönetim panelinize gidip bir **CNAME kaydı** oluşturun:
-  - **Hedef**: `trevo.app` veya size verilen yönlendirme adresi
+  - **Hedef**: `trevo-delta.vercel.app` veya size verilen yönlendirme adresi
   - Domain'iniz yayına alındıktan sonra Trevo beyaz etiketli olarak bu adreste çalışır
 
 > DNS değişikliklerinin yayılması **24 saati** bulabilir. Bu süre boyunca Trevo'yu varsayılan domain üzerinden kullanmaya devam edebilirsiniz.

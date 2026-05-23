@@ -248,7 +248,7 @@ export default function ApiWebhookPage() {
 
   const baseUrl = typeof window !== 'undefined'
     ? `${window.location.protocol}//${window.location.host}`
-    : process.env.NEXT_PUBLIC_APP_URL || 'https://trevo.app'
+    : process.env.NEXT_PUBLIC_APP_URL || 'https://trevo-delta.vercel.app'
 
   return (
     <div className="max-w-4xl space-y-8">

@@ -2,7 +2,7 @@ import { Resend } from 'resend'
 import { Brand, DEFAULT_BRAND } from '@/lib/types/brand'
 import { escapeHtml } from '@/lib/escape-html'
 
-const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'bildirim@trevo.app'
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'bildirim@trevo-delta.vercel.app'
 
 let _resend: Resend | null = null
 function getResend(): Resend | null {
@@ -74,7 +74,7 @@ export async function sendFileNotification({
   const b = brand || DEFAULT_BRAND
   const brandName = escapeHtml(b.brandName || 'Trevo')
   const primaryColor = b.brandPrimaryColor || '#111827'
-  const fromEmail = process.env.RESEND_FROM_EMAIL || `bildirim@trevo.app`
+  const fromEmail = process.env.RESEND_FROM_EMAIL || `bildirim@trevo-delta.vercel.app`
   const safeClientName = escapeHtml(clientName)
   const safeFileName = escapeHtml(fileName)
 

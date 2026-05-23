@@ -261,7 +261,7 @@ async function sendPaymentNotification(params: {
     .maybeSingle()
 
   const resend = new Resend(apiKey)
-  const fromEmail = process.env.RESEND_FROM_EMAIL || 'bildirim@trevo.app'
+  const fromEmail = process.env.RESEND_FROM_EMAIL || 'bildirim@trevo-delta.vercel.app'
   const brandName = profile?.brand_name || 'Trevo'
 
   // F: escapeHtml

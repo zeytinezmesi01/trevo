@@ -32,7 +32,7 @@ export default function HakkimizdaPage() {
 
         <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: 24, fontWeight: 700, color: '#fff', marginBottom: 16 }}>İletişim</h2>
         <p style={{ color: '#8a9ab5', lineHeight: 1.8 }}>
-          📧 <a href="mailto:bilgi@trevo.app" style={{ color: '#7aa0ff' }}>bilgi@trevo.app</a><br />
+          📧 <a href="mailto:bilgi@trevo-delta.vercel.app" style={{ color: '#7aa0ff' }}>bilgi@trevo-delta.vercel.app</a><br />
           📍 İstanbul, Türkiye
         </p>
       </div>
