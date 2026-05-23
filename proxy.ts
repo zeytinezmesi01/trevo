@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { NextResponse, type NextRequest } from 'next/server'
+import { DEFAULT_DOMAINS } from '@/lib/constants'
 
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
@@ -39,7 +40,7 @@ export async function proxy(request: NextRequest) {
   // Brand detection via domain (white-label)
   const host = request.headers.get('host') || ''
   const domain = host.replace(/:\d+$/, '').replace(/^www\./, '')
-  const isDefaultDomain = ['localhost', 'trevo-delta.vercel.app'].some(
+  const isDefaultDomain = DEFAULT_DOMAINS.some(
     (d) => domain === d || domain.endsWith(`.${d}`)
   )
 
@@ -61,12 +62,14 @@ export async function proxy(request: NextRequest) {
       supabaseResponse.headers.set('x-brand-profile-id', profile.id as string)
       supabaseResponse.cookies.set('brand_profile_id', profile.id as string, {
         httpOnly: false,
+        secure: true,
         sameSite: 'lax',
         maxAge: 60 * 60 * 24,
       })
       if (profile.tenant_id) {
         supabaseResponse.cookies.set('brand_tenant_id', profile.tenant_id as string, {
           httpOnly: false,
+          secure: true,
           sameSite: 'lax',
           maxAge: 60 * 60 * 24,
         })

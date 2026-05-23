@@ -26,10 +26,16 @@ export function encryptSecret(plaintext: string): string {
 
 export function decryptSecret(stored: string): string {
   if (!stored) return ''
-  // Şifrelenmemiş (eski kayıt) → düz metin kabul et
-  if (!stored.includes(':')) return stored
+  // Şifrelenmemiş (eski kayıt) → düz metin kabul et (geriye dönük uyumluluk)
+  if (!stored.includes(':')) {
+    console.warn('decryptSecret: şifrelenmemiş eski format, düz metin döndürülüyor')
+    return stored
+  }
   const parts = stored.split(':')
-  if (parts.length !== 3) return stored
+  if (parts.length !== 3) {
+    console.warn('decryptSecret: beklenmeyen format, düz metin döndürülüyor')
+    return stored
+  }
   try {
     const key = getKey()
     const iv = Buffer.from(parts[0], 'hex')
@@ -40,7 +46,8 @@ export function decryptSecret(stored: string): string {
     let decrypted = decipher.update(encrypted, 'hex', 'utf8')
     decrypted += decipher.final('utf8')
     return decrypted
-  } catch {
-    return stored // fallback: düz metin
+  } catch (e) {
+    console.error('Secret decryption failed:', e)
+    throw new Error('Secret decryption failed')
   }
 }

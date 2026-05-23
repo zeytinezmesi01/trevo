@@ -5,11 +5,18 @@ import { createAdminClient } from '@/lib/supabase/admin'
 // POST /api/account/delete — hesabı + tüm verileri + auth kullanıcısını sil
 // Daha önce istemci tarafında yapılıyordu; auth.users SİLİNMİYORDU,
 // aynı e-postayla yeniden kayıt mümkün olmuyordu.
-export async function POST() {
+export async function POST(request: Request) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {
     return NextResponse.json({ error: 'Oturum yok' }, { status: 401 })
+  }
+
+  // E-posta onayı: kazara silmeyi engelle
+  const body = await request.json().catch(() => null)
+  const confirmEmail = body?.email
+  if (!confirmEmail || confirmEmail !== user.email) {
+    return NextResponse.json({ error: 'E-posta onayı gerekli. Hesabınızı silmek için e-posta adresinizi girin.' }, { status: 400 })
   }
 
   const admin = createAdminClient()
@@ -48,8 +55,9 @@ export async function POST() {
   // 3. KRİTİK: Auth kullanıcısını sil — aynı e-postayla yeniden kayıt için şart
   const { error: authError } = await admin.auth.admin.deleteUser(user.id)
   if (authError) {
+    console.error('Auth kullanıcısı silinemedi:', authError)
     return NextResponse.json({
-      error: 'Auth kullanıcısı silinemedi: ' + authError.message,
+      error: 'Hesap silinirken bir hata oluştu',
     }, { status: 500 })
   }
 

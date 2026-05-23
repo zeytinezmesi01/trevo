@@ -12,6 +12,13 @@ const card = {
 const formatTRY = (v: number) =>
   new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(v)
 
+function parseSizeToMB(s: string): number {
+  const num = parseFloat(s)
+  if (s.toLowerCase().includes('gb')) return num * 1024
+  if (s.toLowerCase().includes('kb')) return num / 1024
+  return num // assume MB
+}
+
 type MonthlyBucket = { label: string; month: number; year: number; total: number }
 type TopClient = { id: string; name: string; total: number }
 
@@ -70,8 +77,7 @@ export default async function RaporlarPage() {
   files?.forEach((f) => {
     fileCount++
     if (f.size) {
-      const num = parseFloat(f.size)
-      if (!isNaN(num)) totalSizeMB += num
+      totalSizeMB += parseSizeToMB(String(f.size))
     }
   })
 

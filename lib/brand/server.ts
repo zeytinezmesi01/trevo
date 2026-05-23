@@ -85,6 +85,12 @@ export async function getBrandByTenantId(tenantId: string): Promise<Brand> {
   return brand
 }
 
+export function clearBrandCache(userId?: string, domain?: string, tenantId?: string): void {
+  if (userId) brandCache.delete(`user:${userId}`)
+  if (domain) brandCache.delete(domain)
+  if (tenantId) brandCache.delete(`tenant:${tenantId}`)
+}
+
 export async function generatePortalBrand(
   supabase: SupabaseClient,
   host: string

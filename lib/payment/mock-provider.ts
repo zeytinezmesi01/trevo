@@ -5,6 +5,7 @@ import type {
   CheckoutRetrieveResult,
   TestConnectionResult,
 } from './types'
+import { escapeHtml } from '@/lib/escape-html'
 
 /**
  * MockPaymentProvider — hiçbir API'ye gitmez.
@@ -22,13 +23,13 @@ export class MockPaymentProvider implements PaymentProvider {
   <div style="font-size:48px;margin-bottom:16px;">🧪</div>
   <h3 style="margin:0 0 8px;color:#111827;font-size:18px;font-weight:600;">Test Ödemesi</h3>
   <p style="margin:0 0 4px;color:#6b7280;font-size:14px;">
-    ₺${params.amount.toFixed(2)} — ${params.basketItems.map(i => i.name).join(', ')}
+    ₺${escapeHtml(String(params.amount.toFixed(2)))} — ${params.basketItems.map(i => escapeHtml(i.name)).join(', ')}
   </p>
   <p style="margin:0 0 24px;color:#9ca3af;font-size:12px;">
     Bu bir test ekranıdır. Gerçek ödeme alınmaz.
   </p>
   <div style="display:flex;gap:12px;justify-content:center;">
-    <form method="POST" action="${params.callbackUrl}" style="display:inline;">
+    <form method="POST" action="${escapeHtml(params.callbackUrl)}" style="display:inline;">
       <input type="hidden" name="token" value="${token}" />
       <button type="submit" style="background:#10b981;color:#fff;border:none;padding:12px 32px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;">
         Ödemeyi Onayla

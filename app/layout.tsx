@@ -3,6 +3,7 @@ import { headers } from 'next/headers'
 import { Plus_Jakarta_Sans, Inter } from 'next/font/google'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Brand, DEFAULT_BRAND } from '@/lib/types/brand'
+import { DEFAULT_DOMAINS } from '@/lib/constants'
 import BrandStyle from '@/components/brand-style'
 import './globals.css'
 
@@ -22,7 +23,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const headersList = await headers()
   const host = headersList.get('host') || ''
   const domain = host.replace(/:\d+$/, '').replace(/^www\./, '')
-  const isDefaultDomain = ['localhost', 'trevo-delta.vercel.app'].some(
+  const isDefaultDomain = DEFAULT_DOMAINS.some(
     (d) => domain === d || domain.endsWith(`.${d}`)
   )
 
@@ -63,7 +64,7 @@ export default async function RootLayout({
   const headersList = await headers()
   const host = headersList.get('host') || ''
   const domain = host.replace(/:\d+$/, '').replace(/^www\./, '')
-  const isDefaultDomain = ['localhost', 'trevo-delta.vercel.app'].some(
+  const isDefaultDomain = DEFAULT_DOMAINS.some(
     (d) => domain === d || domain.endsWith(`.${d}`)
   )
 

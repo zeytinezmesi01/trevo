@@ -48,6 +48,7 @@ export default function FaturalarPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
   const [userRole, setUserRole] = useState<string>('')
+  const [error, setError] = useState('')
   const router = useRouter()
 
   useEffect(() => {
@@ -73,17 +74,29 @@ export default function FaturalarPage() {
   }, [])
 
   const handleStatus = async (id: string, newStatus: string) => {
-    await fetch(`/api/invoices/${id}`, {
+    setError('')
+    const res = await fetch(`/api/invoices/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: newStatus }),
     })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Bilinmeyen hata' }))
+      setError(err.error || 'Durum guncellenemedi')
+      return
+    }
     fetchData()
   }
 
   const handleDelete = async (id: string) => {
     if (!confirm('Bu faturayı silmek istediğine emin misin?')) return
-    await fetch(`/api/invoices/${id}`, { method: 'DELETE' })
+    setError('')
+    const res = await fetch(`/api/invoices/${id}`, { method: 'DELETE' })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Bilinmeyen hata' }))
+      setError(err.error || 'Fatura silinemedi')
+      return
+    }
     fetchData()
   }
 
@@ -99,6 +112,9 @@ export default function FaturalarPage() {
         </Link>
       </div>
 
+      {error && (
+        <div className="mb-4 px-4 py-3 rounded-xl text-sm font-medium bg-red-50 text-red-600 border border-red-100">{error}</div>
+      )}
       {loading ? (
         <div className="text-center py-16" style={{ color: '#94a3b8', fontSize: 14 }}>Yükleniyor...</div>
       ) : invoices.length === 0 ? (

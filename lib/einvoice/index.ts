@@ -27,6 +27,11 @@ export function getEInvoiceProvider(): EInvoiceProvider {
   if (useMock || providerName === 'mock') {
     cachedProvider = new MockEInvoiceProvider()
   } else {
+    if (!process.env.EINVOICE_API_BASE_URL) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('EINVOICE_API_BASE_URL must be set in production')
+      }
+    }
     const baseUrl =
       process.env.EINVOICE_API_BASE_URL || 'https://apitest.nilvera.com'
     cachedProvider = new NilveraEInvoiceProvider(baseUrl, apiKey!)

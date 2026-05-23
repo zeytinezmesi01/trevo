@@ -47,6 +47,7 @@ export function getArticles(): ArticleMeta[] {
 }
 
 export function getArticle(slug: string): Article | null {
+  if (!/^[a-z0-9-]+$/.test(slug)) return null
   const index = loadIndex()
   const meta = index.articles.find((a) => a.slug === slug)
   if (!meta) return null

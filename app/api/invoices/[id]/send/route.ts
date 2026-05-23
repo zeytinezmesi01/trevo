@@ -54,7 +54,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     </td></tr>
   </table>
 </body></html>`,
-    }).catch(() => {})
+    }).catch((err) => { console.error('Email send failed:', err) })
   }
 
   try {

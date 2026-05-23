@@ -4,7 +4,7 @@ import { decryptSecret } from '@/lib/crypto'
 import type { WebhookEvent } from './events'
 
 const MAX_BODY_SNAPLEN = 2000
-const RETRY_DELAYS = [0, 2000, 5000] // saniye cinsinden
+const RETRY_DELAYS = [0, 2000, 5000] // milisaniye cinsinden
 
 type WebhookPayload = Record<string, unknown>
 

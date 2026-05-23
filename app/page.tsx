@@ -3,10 +3,9 @@ import Image from 'next/image'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { DEFAULT_DOMAINS } from '@/lib/constants'
 import ThemeToggle from '@/components/landing/theme-toggle'
 import ScrollRevealInit from '@/components/landing/scroll-reveal-init'
-
-const DEFAULT_DOMAINS = ['localhost', 'trevo-delta.vercel.app']
 
 export default async function Home() {
   // Custom domain'de Trevo anasayfasi gosterilmez, giris sayfasina yonlendir

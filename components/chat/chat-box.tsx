@@ -23,6 +23,7 @@ export default function ChatBox({ tenantId, userId, userName }: Props) {
   const [sending, setSending] = useState(false)
   const [loading, setLoading] = useState(true)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const nameCache = useRef(new Map<string, string>())
   const supabase = createClient()
 
   // Mesajlari yukle
@@ -54,17 +55,22 @@ export default function ChatBox({ tenantId, userId, userName }: Props) {
           const newMsg = payload.new as Message
           // Kendi mesajimizi tekrar ekleme (POST zaten ekledi)
           if (newMsg.sender_id === userId) return
-          // Gonderen ismini cek
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('full_name')
-            .eq('id', newMsg.sender_id)
-            .maybeSingle()
+          // Gonderen ismini cek (once cache'e bak)
+          let senderName = nameCache.current.get(newMsg.sender_id)
+          if (!senderName) {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('full_name')
+              .eq('id', newMsg.sender_id)
+              .maybeSingle()
+            senderName = profile?.full_name || 'Bilinmiyor'
+            nameCache.current.set(newMsg.sender_id, senderName)
+          }
           setMessages((prev) => [
             ...prev,
             {
               ...newMsg,
-              sender_name: profile?.full_name || 'Bilinmiyor',
+              sender_name: senderName,
             },
           ])
         }

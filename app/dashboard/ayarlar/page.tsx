@@ -19,6 +19,7 @@ export default function AyarlarPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [error, setError] = useState('')
   const [deleting, setDeleting] = useState(false)
   const [einvoiceEnabled, setEinvoiceEnabled] = useState(false)
   const [provisioning, setProvisioning] = useState(false)
@@ -58,6 +59,7 @@ export default function AyarlarPage() {
 
   const handleKaydet = async () => {
     setSaving(true)
+    setError('')
     try {
       const res = await fetch('/api/profile', {
         method: 'PATCH',
@@ -68,9 +70,9 @@ export default function AyarlarPage() {
         const data = await res.json().catch(() => ({}))
         if (data.fields) {
           const messages = Object.values(data.fields).join('\n')
-          alert('Doğrulama hatası:\n\n' + messages)
+          setError('Doğrulama hatası:\n\n' + messages)
         } else {
-          alert(data.error || 'Bir hata oluştu')
+          setError(data.error || 'Bir hata oluştu')
         }
         setSaving(false)
         return
@@ -78,7 +80,7 @@ export default function AyarlarPage() {
       setSuccess(true)
       setTimeout(() => setSuccess(false), 3000)
     } catch {
-      alert('Bağlantı hatası')
+      setError('Bağlantı hatası')
     }
     setSaving(false)
   }
@@ -118,6 +120,13 @@ export default function AyarlarPage() {
         <h1 className="text-2xl font-bold text-gray-900">Ayarlar</h1>
         <p className="text-gray-500 text-sm mt-1">Profil, şirket ve marka bilgilerini güncelle</p>
       </div>
+
+      {/* Hata mesaji */}
+      {error && (
+        <div className="mb-6 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 whitespace-pre-line">
+          {error}
+        </div>
+      )}
 
       <div className="max-w-2xl space-y-6">
         {/* PROFİL */}
@@ -309,16 +318,17 @@ export default function AyarlarPage() {
               if (!confirm('Hesabınızı ve tüm verilerinizi kalıcı olarak silmek istediğinize emin misiniz? Bu işlem GERİ ALINAMAZ.')) return
               if (!confirm('Son bir kez daha soruyoruz: Tüm müşteriler, dosyalar, faturalar ve ayarlar silinecek. Emin misiniz?')) return
               setDeleting(true)
+              setError('')
               try {
                 const res = await fetch('/api/account/delete', { method: 'POST' })
                 if (!res.ok) {
                   const data = await res.json().catch(() => ({}))
-                  alert(data.error || 'Hesap silinemedi.')
+                  setError(data.error || 'Hesap silinemedi.')
                   setDeleting(false)
                   return
                 }
               } catch {
-                alert('Bağlantı hatası — hesap silinemedi.')
+                setError('Bağlantı hatası — hesap silinemedi.')
                 setDeleting(false)
                 return
               }

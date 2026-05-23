@@ -86,7 +86,9 @@ export async function POST(request: Request) {
   const provider = getPaymentProvider(tenant || {})
 
   // A-2: iyzico imza doğrulaması (gerçek provider için)
-  if (provider.name === 'iyzico') {
+  // Production'da her zaman doğrula; development'da sadece iyzico için
+  const isProduction = process.env.NODE_ENV === 'production'
+  if (isProduction || provider.name === 'iyzico') {
     const signature = request.headers.get('x-iyz-signature')
     if (!provider.verifyCallbackSignature(bodyText, signature)) {
       return NextResponse.json({ error: 'Geçersiz imza' }, { status: 401 })

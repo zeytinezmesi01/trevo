@@ -18,7 +18,8 @@ async function generateInvoiceNumber(tenantId: string): Promise<string> {
 export async function POST(request: Request) {
   // RLS bypass: portal token ile anon erişim — admin client kullan
   const admin = createAdminClient()
-  const { token, description, amount, note } = await request.json()
+  const body = await request.json()
+  const { token, description, amount, note } = body
   if (!token) return NextResponse.json({ error: 'Token gerekli' }, { status: 400 })
 
   // amount doğrulama
@@ -50,7 +51,7 @@ export async function POST(request: Request) {
   const invoiceNumber = await generateInvoiceNumber(tenantId)
 
   const lineTotal = parsedAmount
-  const kdvRate = 20
+  const kdvRate = typeof body.kdv_rate === 'number' && body.kdv_rate >= 0 && body.kdv_rate <= 100 ? body.kdv_rate : 20
   const kdvAmount = lineTotal * kdvRate / 100
   const total = lineTotal + kdvAmount
 

@@ -25,13 +25,16 @@ export async function generateInvoiceNumber(
   return `${prefix}${year}${String(num).padStart(4, '0')}`
 }
 
-export async function listInvoices(tenantId: string) {
+export async function listInvoices(tenantId: string, options?: { limit?: number; offset?: number }) {
+  const limit = options?.limit ?? 50
+  const offset = options?.offset ?? 0
   const supabase = await createClient()
   const { data } = await supabase
     .from('invoices')
     .select('id, invoice_number, client_name, status, total, invoice_date, due_date, created_at, einvoice_status, einvoice_type')
     .eq('tenant_id', tenantId)
     .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1)
   return data || []
 }
 
@@ -87,7 +90,7 @@ export async function createInvoice(
 
   const displayKdvRate = data.vat_exempt ? 0 : (data.items[0]?.kdv_rate || 20)
 
-  // G-1: Invoice ekle
+  // Invoice ekle
   const { data: invoice, error: invoiceError } = await client
     .from('invoices')
     .insert({
@@ -121,7 +124,7 @@ export async function createInvoice(
     throw new Error(`Fatura oluşturulamadı: ${invoiceError?.message || 'bilinmeyen hata'}${invoiceError?.code ? ` (kod: ${invoiceError.code})` : ''}`)
   }
 
-  // G-1: Items ekle; hata olursa faturayı temizle
+  // Items ekle; hata olursa faturayı temizle
   try {
     const items = data.items.map((item, i) => ({
       invoice_id: invoice.id,
@@ -146,7 +149,7 @@ export async function createInvoice(
   return invoice.id as string
 }
 
-// G-2: İzin verilen durum geçişlerini kontrol et
+// İzin verilen durum geçişlerini kontrol et
 export async function updateInvoiceStatus(invoiceId: string, tenantId: string, status: string, data?: { emailed_at?: string; email_to?: string; pdf_url?: string }) {
   const supabase = await createClient()
 

@@ -1,8 +1,13 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { rateLimit } from '@/lib/rate-limit'
 
 // GET /api/invitations/lookup?token=xxx — davet bilgilerini token ile sorgula (anon erişim)
 export async function GET(request: Request) {
+  const ip = request.headers.get('x-forwarded-for') || 'unknown'
+  if (!rateLimit(`invite-lookup:${ip}`, 10, 60_000)) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+  }
   const { searchParams } = new URL(request.url)
   const token = searchParams.get('token')
 

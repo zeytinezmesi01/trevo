@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { clearBrandCache } from '@/lib/brand/server'
 import { promises as dns } from 'dns'
 
 async function checkVercelDomain(domain: string): Promise<boolean> {
@@ -116,6 +117,8 @@ export async function POST() {
       brand_domain_last_check_at: now,
     })
     .eq('id', user.id)
+
+  clearBrandCache(user.id, domain!)
 
   return NextResponse.json({ status, error, checkedAt: now, vercelConfigured })
 }

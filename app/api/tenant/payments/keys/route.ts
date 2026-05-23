@@ -24,7 +24,7 @@ export async function GET() {
   const secretKey = tenant ? tenant.iyzico_secret_key || '' : ''
 
   return NextResponse.json({
-    apiKey,
+    apiKeySet: !!apiKey,
     secretKeySet: !!secretKey,
     mode: tenant?.iyzico_mode || 'sandbox',
   })

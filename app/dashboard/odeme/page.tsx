@@ -19,8 +19,9 @@ export default function OdemePage() {
       const res = await fetch('/api/tenant/payments/keys')
       if (res.ok) {
         const data = await res.json()
-        if (data.apiKey) { setApiKey(data.apiKey); setAktif(true) }
+        if (data.apiKeySet) { setApiKey('••••••••'); setAktif(true) }
         // secretKey döndürülmez (güvenlik); yalnızca varlığı bildirilir
+        if (data.secretKeySet) setSecretKey('••••••••')
         if (data.mode) setMode(data.mode as 'sandbox' | 'production')
       }
     }
@@ -30,10 +31,15 @@ export default function OdemePage() {
   const handleKaydet = async () => {
     setSaving(true)
     try {
+      const maskedPlaceholder = '••••••••'
       const res = await fetch('/api/tenant/payments/keys', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ apiKey, secretKey, mode }),
+        body: JSON.stringify({
+          apiKey: apiKey === maskedPlaceholder ? '' : apiKey,
+          secretKey: secretKey === maskedPlaceholder ? '' : secretKey,
+          mode,
+        }),
       })
       if (res.ok) setAktif(!!apiKey)
     } catch {}

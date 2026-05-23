@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getTenantContextApi } from '@/lib/tenant/auth'
+import { clearBrandCache } from '@/lib/brand/server'
 import crypto from 'crypto'
 
 const DOMAIN_RE = /^([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i
@@ -95,6 +96,8 @@ export async function POST(request: Request) {
 
   // Vercel'e domain ekle (env varsa otomatik, yoksa atla)
   const vercel = await addDomainToVercel(domain)
+
+  clearBrandCache(undefined, domain)
 
   return NextResponse.json({
     domain,

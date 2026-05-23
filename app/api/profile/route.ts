@@ -93,7 +93,8 @@ export async function PATCH(request: Request) {
     .eq('id', user.id)
 
   if (error) {
-    return NextResponse.json({ error: 'Güncelleme hatası: ' + error.message }, { status: 500 })
+    console.error('Profil güncelleme hatası:', error)
+    return NextResponse.json({ error: 'Güncelleme sırasında bir hata oluştu' }, { status: 500 })
   }
 
   return NextResponse.json({ ok: true })

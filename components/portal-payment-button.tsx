@@ -2,6 +2,10 @@
 
 import { useState } from 'react'
 
+function sanitizeFormHtml(html: string): string {
+  return html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+}
+
 export default function PortalPaymentButton({
   invoiceId,
   portalToken,
@@ -95,7 +99,7 @@ export default function PortalPaymentButton({
                 <p style={{ color: '#ef4444', fontSize: 14 }}>{error}</p>
               </div>
             ) : formContent ? (
-              <div dangerouslySetInnerHTML={{ __html: formContent }} />
+              <div dangerouslySetInnerHTML={{ __html: sanitizeFormHtml(formContent) }} />
             ) : null}
           </div>
         </div>

@@ -63,7 +63,8 @@ export class NilveraEInvoiceProvider implements EInvoiceProvider {
 
     if (!res.ok) {
       const text = await res.text().catch(() => '')
-      throw new Error(`Nilvera API hatası (${res.status}): ${text}`)
+      console.error(`Nilvera API yanıtı (${res.status}):`, text)
+      throw new Error(`Nilvera API hatası (${res.status})`)
     }
 
     return res.json() as Promise<T>
@@ -78,7 +79,8 @@ export class NilveraEInvoiceProvider implements EInvoiceProvider {
 
     if (!res.ok) {
       const text = await res.text().catch(() => '')
-      throw new Error(`Nilvera binary hatası (${res.status}): ${text}`)
+      console.error(`Nilvera binary yanıtı (${res.status}):`, text)
+      throw new Error(`Nilvera binary hatası (${res.status})`)
     }
 
     const arrayBuffer = await res.arrayBuffer()

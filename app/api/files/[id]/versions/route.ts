@@ -63,7 +63,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     uploaded_by: ctx.userId,
   })
   if (versionError) {
-    return NextResponse.json({ error: `Sürüm kaydedilemedi: ${versionError.message}` }, { status: 500 })
+    console.error('Sürüm kaydedilemedi:', versionError)
+    return NextResponse.json({ error: 'Sürüm kaydedilemedi' }, { status: 500 })
   }
 
   // files satırını güncel sürüme taşı (portal/güncel görünüm bunu gösterir)

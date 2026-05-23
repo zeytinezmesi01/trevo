@@ -91,20 +91,6 @@ export default function ApiWebhookPage() {
     })()
   }, [])
 
-  // Load deliveries when a webhook row is expanded
-  useEffect(() => {
-    if (!expandedWebhook) return
-    const loadDeliveries = async () => {
-      try {
-        const res = await fetch(`/api/tenant/webhooks`)
-        // Deliveries are embedded in a separate API or loaded here
-        // For now we load from a direct query
-        // Actually we need a separate endpoint or we'll just show what we have
-      } catch {}
-    }
-    loadDeliveries()
-  }, [expandedWebhook])
-
   // --- API Keys ---
   const handleCreateKey = async () => {
     if (!newKeyName.trim()) return
