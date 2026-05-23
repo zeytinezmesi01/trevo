@@ -4,6 +4,7 @@ import { DEFAULT_BRAND } from '@/lib/types/brand'
 import DashboardSidebar from '@/components/dashboard-sidebar'
 import DashboardTopbar from '@/components/dashboard/topbar'
 import OnboardingModal from '@/components/onboarding-modal'
+import ChatWidget from '@/components/chat/chat-widget'
 import BrandStyle from '@/components/brand-style'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -59,6 +60,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
         </div>
       </main>
       {userRole === 'owner' && <OnboardingModal />}
+      {userTenantId && user && (
+        <ChatWidget tenantId={userTenantId} userId={user.id} userName={userName} />
+      )}
     </div>
   )
 }
