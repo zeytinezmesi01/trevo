@@ -35,14 +35,16 @@ export default function OnboardingModal() {
       // Bu oturum/kullanıcı için atlandıysa gösterme
       if (typeof window !== 'undefined' && localStorage.getItem(`${SKIP_KEY}_${user.id}`)) return
 
-      // Profil zaten kurulmuşsa gösterme
+      // Profil bilgilerini al
       const { data: profile } = await supabase
         .from('profiles')
-        .select('company_name, company_tax_number, company_tax_office, brand_name, brand_primary_color, full_name')
+        .select('company_name, company_tax_number, company_tax_office, brand_name, brand_primary_color, full_name, role')
         .eq('id', user.id)
         .maybeSingle()
 
-      if (!profile || (profile.company_name && profile.company_name.trim())) return
+      // Sadece owner'a goster, ekip uyelerine asla
+      if (!profile || profile.role !== 'owner') return
+      if (profile.company_name && profile.company_name.trim()) return
 
       // Olabildiğince ön doldur
       setForm({
