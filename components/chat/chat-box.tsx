@@ -53,18 +53,19 @@ export default function ChatBox({ tenantId, userId, userName }: Props) {
         },
         async (payload) => {
           const newMsg = payload.new as Message
+          const senderId = newMsg.sender_id
           // Kendi mesajimizi tekrar ekleme (POST zaten ekledi)
-          if (newMsg.sender_id === userId) return
+          if (!senderId || senderId === userId) return
           // Gonderen ismini cek (once cache'e bak)
-          let senderName = nameCache.current.get(newMsg.sender_id)
+          let senderName = nameCache.current.get(senderId)
           if (!senderName) {
             const { data: profile } = await supabase
               .from('profiles')
               .select('full_name')
-              .eq('id', newMsg.sender_id)
+              .eq('id', senderId)
               .maybeSingle()
             senderName = profile?.full_name || 'Bilinmiyor'
-            nameCache.current.set(newMsg.sender_id, senderName)
+            nameCache.current.set(senderId, senderName)
           }
           setMessages((prev) => [
             ...prev,
