@@ -3,7 +3,15 @@
 import { useState } from 'react'
 import { Brand } from '@/lib/types/brand'
 
-export default function BrandLogo({ brand, className }: { brand: Brand; className?: string }) {
+export default function BrandLogo({
+  brand,
+  className,
+  imgClassName,
+}: {
+  brand: Brand
+  className?: string
+  imgClassName?: string
+}) {
   const [imgError, setImgError] = useState(false)
 
   if (brand.brandLogoUrl && !imgError) {
@@ -11,7 +19,7 @@ export default function BrandLogo({ brand, className }: { brand: Brand; classNam
       <img
         src={brand.brandLogoUrl}
         alt={brand.brandName || 'Logo'}
-        className={className || 'h-8 w-auto'}
+        className={imgClassName || 'h-8 w-auto max-w-[160px] object-contain'}
         onError={() => setImgError(true)}
       />
     )

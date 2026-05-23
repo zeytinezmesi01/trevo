@@ -64,10 +64,14 @@ export default async function PortalPage({ params }: { params: Promise<{ token: 
       <div className="min-h-screen bg-gray-50">
         {/* HEADER */}
         <div className="bg-white border-b border-gray-100">
-          <div className="max-w-3xl mx-auto px-6 py-5 flex items-center justify-between">
+          <div className="max-w-5xl mx-auto px-8 py-5 flex items-center justify-between">
             <div>
-              <BrandLogo brand={brand} className="text-lg font-bold tracking-tight text-primary" />
-              <div className="text-xs text-gray-400">Müşteri Portalı</div>
+              <BrandLogo
+                brand={brand}
+                className="text-lg font-bold tracking-tight text-primary"
+                imgClassName="h-9 w-auto max-w-[180px] object-contain"
+              />
+              <div className="text-xs text-gray-400 mt-0.5">Müşteri Portalı</div>
             </div>
             <div className="text-right">
               <div className="text-sm font-semibold text-gray-900">{client.name}</div>
@@ -77,7 +81,7 @@ export default async function PortalPage({ params }: { params: Promise<{ token: 
         </div>
 
         {/* İÇERİK */}
-        <div className="max-w-3xl mx-auto px-6 py-10">
+        <div className="max-w-5xl mx-auto px-8 py-10">
           <h1 className="text-xl font-bold text-gray-900 mb-1">Dosyalarınız</h1>
           <p className="text-gray-500 text-sm mb-6">Paylaşılan dosyaları buradan indirebilirsiniz.</p>
 
@@ -112,7 +116,7 @@ export default async function PortalPage({ params }: { params: Promise<{ token: 
         </div>
 
         {/* FATURALAR */}
-        <div className="max-w-3xl mx-auto px-6 py-10 border-t border-gray-100">
+        <div className="max-w-5xl mx-auto px-8 py-10 border-t border-gray-100">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-xl font-bold text-gray-900 mb-1">Faturalarınız</h1>
