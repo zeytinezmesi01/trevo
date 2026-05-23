@@ -31,7 +31,7 @@ export default async function PortalPage({ params }: { params: Promise<{ token: 
   const host = headersList.get('host') || ''
   let brand = await generatePortalBrand(admin, host)
 
-  // localhost/trevo.app gibi varsayılan domain'lerde tenant brand'ini bul
+  // localhost/trevo-delta.vercel.app gibi varsayılan domain'lerde tenant brand'ini bul
   if (brand.brandName === DEFAULT_BRAND.brandName && client.tenant_id) {
     const { data: tenantProfile } = await admin
       .from('profiles')

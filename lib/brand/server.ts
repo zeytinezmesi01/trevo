@@ -12,12 +12,19 @@ function buildBrandFromProfile(profile: Record<string, unknown> | null): Brand {
   }
 }
 
+function isDomainActive(profile: Record<string, unknown> | null): boolean {
+  if (!profile) return false
+  // brand_domain_status null ise domain hic ayarlanmamis — DEFAULT_BRAND doner
+  // Sadece 'active' olan domain'ler portalda gosterilir
+  return profile.brand_domain_status === 'active'
+}
+
 const brandCache = new Map<string, { brand: Brand; expiresAt: number }>()
 const CACHE_TTL = 60_000 // 1 minute
 
 export async function getBrandByDomain(host: string): Promise<Brand> {
   const domain = host.replace(/:\d+$/, '').replace(/^www\./, '')
-  const isDefaultDomain = ['localhost', 'trevo.app', 'trevo.vercel.app'].some(
+  const isDefaultDomain = ['localhost', 'trevo-delta.vercel.app'].some(
     (d) => domain === d || domain.endsWith(`.${d}`)
   )
   if (isDefaultDomain) return { ...DEFAULT_BRAND }
@@ -29,9 +36,14 @@ export async function getBrandByDomain(host: string): Promise<Brand> {
   const admin = createAdminClient()
   const { data } = await admin
     .from('profiles')
-    .select('brand_name, brand_logo_url, brand_primary_color, brand_domain')
+    .select('brand_name, brand_logo_url, brand_primary_color, brand_domain, brand_domain_status')
     .eq('brand_domain', domain)
     .maybeSingle()
+
+  if (!isDomainActive(data)) {
+    brandCache.set(domain, { brand: { ...DEFAULT_BRAND }, expiresAt: Date.now() + CACHE_TTL })
+    return { ...DEFAULT_BRAND }
+  }
 
   const brand = buildBrandFromProfile(data)
   brandCache.set(domain, { brand, expiresAt: Date.now() + CACHE_TTL })
@@ -61,7 +73,7 @@ export async function generatePortalBrand(
   host: string
 ): Promise<Brand> {
   const domain = host.replace(/:\d+$/, '').replace(/^www\./, '')
-  const isDefaultDomain = ['localhost', 'trevo.app', 'trevo.vercel.app'].some(
+  const isDefaultDomain = ['localhost', 'trevo-delta.vercel.app'].some(
     (d) => domain === d || domain.endsWith(`.${d}`)
   )
   if (isDefaultDomain) return { ...DEFAULT_BRAND }
@@ -71,9 +83,14 @@ export async function generatePortalBrand(
 
   const { data } = await supabase
     .from('profiles')
-    .select('brand_name, brand_logo_url, brand_primary_color, brand_domain')
+    .select('brand_name, brand_logo_url, brand_primary_color, brand_domain, brand_domain_status')
     .eq('brand_domain', domain)
     .maybeSingle()
+
+  if (!isDomainActive(data)) {
+    brandCache.set(domain, { brand: { ...DEFAULT_BRAND }, expiresAt: Date.now() + CACHE_TTL })
+    return { ...DEFAULT_BRAND }
+  }
 
   const brand = buildBrandFromProfile(data)
   brandCache.set(domain, { brand, expiresAt: Date.now() + CACHE_TTL })

@@ -8,13 +8,13 @@ import './globals.css'
 
 const jakartaSans = Plus_Jakarta_Sans({
   variable: '--font-display',
-  subsets: ['latin'],
+  subsets: ['latin', 'latin-ext'],
   weight: ['400', '500', '600', '700', '800'],
 })
 
 const inter = Inter({
   variable: '--font-body',
-  subsets: ['latin'],
+  subsets: ['latin', 'latin-ext'],
   weight: ['300', '400', '500', '600'],
 })
 
@@ -22,7 +22,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const headersList = await headers()
   const host = headersList.get('host') || ''
   const domain = host.replace(/:\d+$/, '').replace(/^www\./, '')
-  const isDefaultDomain = ['localhost', 'trevo.app', 'trevo.vercel.app'].some(
+  const isDefaultDomain = ['localhost', 'trevo-delta.vercel.app'].some(
     (d) => domain === d || domain.endsWith(`.${d}`)
   )
 
@@ -35,6 +35,7 @@ export async function generateMetadata(): Promise<Metadata> {
         .from('profiles')
         .select('brand_name, brand_primary_color')
         .eq('brand_domain', domain)
+        .eq('brand_domain_status', 'active')
         .single()
       if (data) {
         brand = {
@@ -62,7 +63,7 @@ export default async function RootLayout({
   const headersList = await headers()
   const host = headersList.get('host') || ''
   const domain = host.replace(/:\d+$/, '').replace(/^www\./, '')
-  const isDefaultDomain = ['localhost', 'trevo.app', 'trevo.vercel.app'].some(
+  const isDefaultDomain = ['localhost', 'trevo-delta.vercel.app'].some(
     (d) => domain === d || domain.endsWith(`.${d}`)
   )
 
@@ -74,6 +75,7 @@ export default async function RootLayout({
         .from('profiles')
         .select('brand_name, brand_logo_url, brand_primary_color, brand_domain')
         .eq('brand_domain', domain)
+        .eq('brand_domain_status', 'active')
         .maybeSingle()
       if (data) {
         brand = {

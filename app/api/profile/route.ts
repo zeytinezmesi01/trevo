@@ -13,7 +13,6 @@ const ALLOWED_FIELDS = [
   'brand_name',
   'brand_logo_url',
   'brand_primary_color',
-  'brand_domain',
 ] as const
 
 type Field = typeof ALLOWED_FIELDS[number]
@@ -43,11 +42,6 @@ function validate(field: Field, value: unknown): string | null {
     case 'brand_logo_url':
       if (v.length > 500) return 'Logo URL çok uzun'
       if (!/^https?:\/\//i.test(v)) return 'Logo URL http(s):// ile başlamalı'
-      break
-    case 'brand_domain':
-      if (v.length > 200) return 'Domain çok uzun'
-      // Çok katı değil ama temel format kontrolü
-      if (!/^[a-z0-9.-]+\.[a-z]{2,}$/i.test(v)) return 'Domain geçersiz (örn. portal.ajans.com)'
       break
     case 'company_name':
     case 'company_tax_office':

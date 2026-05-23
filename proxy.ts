@@ -39,7 +39,7 @@ export async function proxy(request: NextRequest) {
   // Brand detection via domain (white-label)
   const host = request.headers.get('host') || ''
   const domain = host.replace(/:\d+$/, '').replace(/^www\./, '')
-  const isDefaultDomain = ['localhost', 'trevo.app', 'trevo.vercel.app', 'trevo-delta.vercel.app'].some(
+  const isDefaultDomain = ['localhost', 'trevo-delta.vercel.app'].some(
     (d) => domain === d || domain.endsWith(`.${d}`)
   )
 
@@ -52,8 +52,9 @@ export async function proxy(request: NextRequest) {
     )
     const { data: profile } = await admin
       .from('profiles')
-      .select('id')
+      .select('id, brand_domain_status')
       .eq('brand_domain', domain)
+      .eq('brand_domain_status', 'active')
       .maybeSingle()
 
     if (profile) {
