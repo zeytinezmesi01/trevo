@@ -4,6 +4,21 @@ import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import BrandPreview from '@/components/brand-preview'
 
+interface DomainVerifyResponse {
+  domain: string
+  token: string
+  cname: { name: string; value: string }
+  txt: { name: string; value: string }
+  vercel: { ok: boolean; error?: string }
+}
+
+interface DomainCheckResponse {
+  status: string
+  error: string | null
+  checkedAt: string
+  vercelConfigured: boolean
+}
+
 export default function BrandSettingsForm() {
   const [form, setForm] = useState({
     brand_name: '',
@@ -19,11 +34,25 @@ export default function BrandSettingsForm() {
   const fileRef = useRef<HTMLInputElement>(null)
   const supabase = createClient()
 
+  // Domain dogrulama state
+  const [domainStatus, setDomainStatus] = useState<string | null>(null)
+  const [domainToken, setDomainToken] = useState<string | null>(null)
+  const [domainError, setDomainError] = useState<string | null>(null)
+  const [verifying, setVerifying] = useState(false)
+  const [checking, setChecking] = useState(false)
+  const [showVerifyCard, setShowVerifyCard] = useState(false)
+  const [vercelMsg, setVercelMsg] = useState<string | null>(null)
+  const [vercelConfigured, setVercelConfigured] = useState(false)
+
   useEffect(() => {
     const load = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
-      const { data } = await supabase.from('profiles').select('brand_name, brand_logo_url, brand_primary_color, brand_domain').eq('id', user.id).single()
+      const { data } = await supabase
+        .from('profiles')
+        .select('brand_name, brand_logo_url, brand_primary_color, brand_domain, brand_domain_status, brand_domain_verification_token, brand_domain_error')
+        .eq('id', user.id)
+        .single()
       if (data) {
         setForm({
           brand_name: data.brand_name || '',
@@ -31,6 +60,9 @@ export default function BrandSettingsForm() {
           brand_primary_color: data.brand_primary_color || '#111827',
           brand_domain: data.brand_domain || '',
         })
+        setDomainStatus(data.brand_domain_status || null)
+        setDomainToken(data.brand_domain_verification_token || null)
+        setDomainError(data.brand_domain_error || null)
       }
       setLoading(false)
     }
@@ -86,7 +118,6 @@ export default function BrandSettingsForm() {
           brand_name: form.brand_name || null,
           brand_logo_url: form.brand_logo_url || null,
           brand_primary_color: form.brand_primary_color || null,
-          brand_domain: form.brand_domain || null,
         }),
       })
       if (!res.ok) {
@@ -107,11 +138,76 @@ export default function BrandSettingsForm() {
     }
   }
 
+  const handleStartVerify = async () => {
+    if (!form.brand_domain) {
+      alert('Lütfen önce bir domain girin.')
+      return
+    }
+    setVerifying(true)
+    try {
+      const res = await fetch('/api/brand/domain/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domain: form.brand_domain }),
+      })
+      const data: DomainVerifyResponse & { error?: string } = await res.json()
+      if (!res.ok) {
+        alert(data.error || 'Doğrulama başlatılamadı')
+        return
+      }
+      setDomainStatus('pending')
+      setDomainToken(data.token)
+      setDomainError(null)
+      setShowVerifyCard(true)
+      setVercelMsg(data.vercel?.ok ? null : data.vercel?.error || 'Vercel API yapılandırılmamış')
+      setVercelConfigured(false)
+    } catch {
+      alert('Bağlantı hatası — doğrulama başlatılamadı.')
+    } finally {
+      setVerifying(false)
+    }
+  }
+
+  const handleCheck = async () => {
+    setChecking(true)
+    try {
+      const res = await fetch('/api/brand/domain/check', { method: 'POST' })
+      const data: DomainCheckResponse & { error?: string } = await res.json()
+      if (!res.ok) {
+        alert(data.error || 'Kontrol yapılamadı')
+        return
+      }
+      setDomainStatus(data.status)
+      setDomainError(data.error)
+      setVercelConfigured(data.vercelConfigured)
+    } catch {
+      alert('Bağlantı hatası — kontrol yapılamadı.')
+    } finally {
+      setChecking(false)
+    }
+  }
+
   if (loading) {
     return <div className="text-center py-8 text-gray-400 text-sm">Yükleniyor...</div>
   }
 
   const primaryColor = form.brand_primary_color || '#111827'
+
+  const statusBadge = () => {
+    if (!domainStatus) return null
+    switch (domainStatus) {
+      case 'pending':
+        return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-50 text-yellow-700 border border-yellow-200 whitespace-nowrap">Doğrulama bekleniyor</span>
+      case 'verified':
+        return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 whitespace-nowrap">Sahiplik onaylandı, CNAME bekleniyor</span>
+      case 'active':
+        return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200 whitespace-nowrap">Yayında ✓</span>
+      default:
+        return null
+    }
+  }
+
+  const domainChanged = form.brand_domain !== '' && (domainStatus === null || domainStatus === 'pending')
 
   return (
     <div className="space-y-6">
@@ -195,16 +291,101 @@ export default function BrandSettingsForm() {
         <h2 className="text-base font-semibold text-gray-900 mb-4">Özel Alan Adı</h2>
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1.5">Domain</label>
-          <input
-            value={form.brand_domain}
-            onChange={(e) => setForm({ ...form, brand_domain: e.target.value })}
-            className="w-full max-w-md border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-            placeholder="portal.seninajans.com"
-          />
-          <p className="text-xs text-gray-400 mt-1.5">
-            Bu domain&apos;i DNS&apos;inden Trevo sunucusuna CNAME olarak yönlendirmelisin.
-            Müşteri portalin bu domain&apos;de görünecek.
-          </p>
+          <div className="flex items-center gap-3 max-w-md">
+            <input
+              value={form.brand_domain}
+              onChange={(e) => {
+                setForm({ ...form, brand_domain: e.target.value })
+                if (e.target.value !== form.brand_domain) {
+                  setShowVerifyCard(false)
+                }
+              }}
+              className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="portal.seninajans.com"
+            />
+            {statusBadge()}
+          </div>
+
+          {domainError && (
+            <p className="text-xs text-yellow-600 mt-1.5">{domainError}</p>
+          )}
+
+          {/* Doğrulamayı Başlat Butonu */}
+          {domainChanged && (
+            <button
+              onClick={handleStartVerify}
+              disabled={verifying}
+              className="mt-3 bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-medium hover:bg-primary-hover transition-colors disabled:opacity-50"
+            >
+              {verifying ? 'Başlatılıyor...' : 'Doğrulamayı Başlat'}
+            </button>
+          )}
+
+          {(domainStatus === 'pending' || domainStatus === 'verified') && !showVerifyCard && (
+            <button
+              onClick={() => setShowVerifyCard(true)}
+              className="mt-3 ml-3 bg-gray-100 text-gray-700 px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-200 transition-colors"
+            >
+              DNS Kayıtlarını Göster
+            </button>
+          )}
+
+          {/* Doğrulama Kartı */}
+          {showVerifyCard && domainToken && (
+            <div className="mt-4 border border-gray-200 rounded-xl bg-gray-50 p-5 max-w-lg space-y-4">
+              <h3 className="text-sm font-semibold text-gray-900">Domain Doğrulama</h3>
+
+              <div>
+                <p className="text-xs font-medium text-gray-700 mb-2">Adım 1 — DNS sağlayıcına şu kayıtları ekle:</p>
+                <div className="space-y-3">
+                  <div className="bg-white border border-gray-200 rounded-lg p-3">
+                    <div className="text-xs text-gray-400 mb-1">TXT kaydı</div>
+                    <div className="text-sm font-mono text-gray-900 break-all">
+                      <span className="text-gray-500">_trevo-verify.{form.brand_domain}</span>
+                      <span className="text-gray-300 mx-2">→</span>
+                      <span className="text-primary font-medium">{domainToken}</span>
+                    </div>
+                  </div>
+                  <div className="bg-white border border-gray-200 rounded-lg p-3">
+                    <div className="text-xs text-gray-400 mb-1">CNAME kaydı</div>
+                    <div className="text-sm font-mono text-gray-900 break-all">
+                      <span className="text-gray-500">{form.brand_domain}</span>
+                      <span className="text-gray-300 mx-2">→</span>
+                      <span className="text-primary font-medium">cname.vercel-dns.com</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs font-medium text-gray-700 mb-2">Adım 2 — Kayıtları ekledikten sonra kontrol et:</p>
+                <button
+                  onClick={handleCheck}
+                  disabled={checking}
+                  className="bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-medium hover:bg-primary-hover transition-colors disabled:opacity-50"
+                >
+                  {checking ? 'Kontrol ediliyor...' : 'Şimdi Kontrol Et'}
+                </button>
+                <p className="text-xs text-gray-400 mt-2">DNS yayılması 5-60 dakika sürebilir.</p>
+              </div>
+
+              {vercelMsg && (
+                <p className="text-xs text-yellow-600 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2">
+                  ⚠ Vercel: {vercelMsg}
+                </p>
+              )}
+              {!vercelMsg && vercelConfigured && (
+                <p className="text-xs text-green-600 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                  ✓ Vercel domain onaylandı — SSL aktif
+                </p>
+              )}
+              {!vercelMsg && !vercelConfigured && domainStatus === 'active' && (
+                <p className="text-xs text-yellow-600 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2">
+                  Vercel SSL hazırlanıyor, birkaç dakika içinde aktif olur...
+                </p>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
