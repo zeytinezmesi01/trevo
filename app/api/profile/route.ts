@@ -101,7 +101,17 @@ export async function PATCH(request: Request) {
   // Brand alanlari guncellendiyse cache'i temizle
   const brandFields = ['brand_name', 'brand_logo_url', 'brand_primary_color']
   if (Object.keys(update).some((k) => (brandFields as string[]).includes(k))) {
-    clearBrandCache(user.id)
+    // tenant_id'yi alip cache'i dogru sekilde temizle (Y8 fix)
+    const { data: p } = await supabase
+      .from('profiles')
+      .select('tenant_id')
+      .eq('id', user.id)
+      .maybeSingle()
+    if (p?.tenant_id) {
+      clearBrandCache(p.tenant_id)
+    } else {
+      clearBrandCache()
+    }
   }
 
   return NextResponse.json({ ok: true })
