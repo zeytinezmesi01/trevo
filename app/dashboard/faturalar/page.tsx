@@ -94,7 +94,7 @@ export default function FaturalarPage() {
           <h1 className="text-2xl font-bold" style={{ color: '#0f172a' }}>Faturalar</h1>
           <p className="text-sm mt-1" style={{ color: '#64748b' }}>Tüm faturalarını tek yerden yönet</p>
         </div>
-        <Link href="/dashboard/faturalar/yeni" className="px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all" style={{ background: 'linear-gradient(135deg, #4f7dff, #6a96ff)', textDecoration: 'none', boxShadow: '0 2px 8px rgba(79,125,255,0.3)' }}>
+        <Link href="/dashboard/faturalar/yeni" className="px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all" style={{ background: 'linear-gradient(135deg, var(--brand-primary, #4f7dff), var(--brand-primary-hover, #6a96ff))', textDecoration: 'none', boxShadow: '0 2px 8px rgba(79,125,255,0.3)' }}>
           + Yeni Fatura
         </Link>
       </div>
@@ -106,7 +106,7 @@ export default function FaturalarPage() {
           <div style={{ fontSize: 48, marginBottom: 12 }}>🧾</div>
           <div style={{ fontSize: 15, fontWeight: 600, color: '#0f172a', marginBottom: 4 }}>Henüz fatura yok</div>
           <div style={{ fontSize: 13, color: '#94a3b8', marginBottom: 16 }}>İlk faturanı oluşturmaya başla</div>
-          <Link href="/dashboard/faturalar/yeni" style={{ fontSize: 13, color: '#4f7dff', fontWeight: 600 }}>Yeni Fatura Oluştur</Link>
+          <Link href="/dashboard/faturalar/yeni" style={{ fontSize: 13, color: 'var(--brand-primary, #4f7dff)', fontWeight: 600 }}>Yeni Fatura Oluştur</Link>
         </div>
       ) : (
         <div className="rounded-2xl border overflow-hidden" style={{ background: '#fff', borderColor: '#e8edf8' }}>

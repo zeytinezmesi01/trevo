@@ -115,7 +115,7 @@ export default function EkipPage() {
         </div>
         <div className="flex items-center gap-3">
           {msg && <span className="text-sm font-medium" style={{ color: msg.includes('Hata') ? '#ef4444' : '#10b981' }}>{msg}</span>}
-          <button onClick={() => setModal(true)} className="px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all" style={{ background: 'linear-gradient(135deg, #4f7dff, #6a96ff)', boxShadow: '0 2px 8px rgba(79,125,255,0.3)' }}>
+          <button onClick={() => setModal(true)} className="px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all" style={{ background: 'linear-gradient(135deg, var(--brand-primary, #4f7dff), var(--brand-primary-hover, #6a96ff))', boxShadow: '0 2px 8px rgba(79,125,255,0.3)' }}>
             + Üye Davet Et
           </button>
         </div>

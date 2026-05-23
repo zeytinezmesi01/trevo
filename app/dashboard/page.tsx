@@ -167,7 +167,7 @@ export default async function DashboardPage() {
           </button>
           <Link
             href="/dashboard/musteriler"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#4f7dff', color: 'white', fontFamily: 'var(--font-display), Plus Jakarta Sans, sans-serif', fontSize: '13px', fontWeight: 600, padding: '9px 16px', borderRadius: '10px', boxShadow: '0 2px 8px rgba(79,125,255,0.3)', textDecoration: 'none' }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'var(--brand-primary, #4f7dff)', color: 'white', fontFamily: 'var(--font-display), Plus Jakarta Sans, sans-serif', fontSize: '13px', fontWeight: 600, padding: '9px 16px', borderRadius: '10px', boxShadow: '0 2px 8px rgba(79,125,255,0.3)', textDecoration: 'none' }}
           >
             <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Müşteri Ekle
@@ -225,7 +225,7 @@ export default async function DashboardPage() {
         <div>
           <div className="flex items-center justify-between mb-3.5">
             <div style={{ fontFamily: 'var(--font-display), Plus Jakarta Sans, sans-serif', fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>Son Dosyalar</div>
-            <Link href="/dashboard/dosyalar" style={{ fontSize: '12.5px', color: '#4f7dff', fontWeight: 500, textDecoration: 'none' }}>Tümünü gör →</Link>
+            <Link href="/dashboard/dosyalar" style={{ fontSize: '12.5px', color: 'var(--brand-primary, #4f7dff)', fontWeight: 500, textDecoration: 'none' }}>Tümünü gör →</Link>
           </div>
           <div style={{ ...card, overflow: 'hidden' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -275,7 +275,7 @@ export default async function DashboardPage() {
           <div>
             <div className="flex items-center justify-between mb-3.5">
               <div style={{ fontFamily: 'var(--font-display), Plus Jakarta Sans, sans-serif', fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>Son Aktivite</div>
-              <span style={{ fontSize: '12.5px', color: '#4f7dff', fontWeight: 500, cursor: 'pointer' }}>Tümü →</span>
+              <span style={{ fontSize: '12.5px', color: 'var(--brand-primary, #4f7dff)', fontWeight: 500, cursor: 'pointer' }}>Tümü →</span>
             </div>
             <div style={{ ...card, overflow: 'hidden' }}>
               {activities.map((a, i) => (
@@ -296,7 +296,7 @@ export default async function DashboardPage() {
           <div>
             <div className="flex items-center justify-between mb-3.5">
               <div style={{ fontFamily: 'var(--font-display), Plus Jakarta Sans, sans-serif', fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>Depolama</div>
-              <span style={{ fontSize: '12.5px', color: '#4f7dff', fontWeight: 500, cursor: 'pointer' }}>Yükselt →</span>
+              <span style={{ fontSize: '12.5px', color: 'var(--brand-primary, #4f7dff)', fontWeight: 500, cursor: 'pointer' }}>Yükselt →</span>
             </div>
             <div style={{ ...card, padding: '18px' }}>
               <div className="flex items-center justify-between mb-2.5">
@@ -304,7 +304,7 @@ export default async function DashboardPage() {
                 <span style={{ fontFamily: 'var(--font-display), Plus Jakarta Sans, sans-serif', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>23.4 / 100 GB</span>
               </div>
               <div style={{ height: '6px', background: '#e8edf8', borderRadius: '4px', overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: '23.4%', borderRadius: '4px', background: 'linear-gradient(90deg, #4f7dff, #7aa0ff)' }} />
+                <div style={{ height: '100%', width: '23.4%', borderRadius: '4px', background: 'linear-gradient(90deg, var(--brand-primary, #4f7dff), var(--brand-primary-hover, #7aa0ff))' }} />
               </div>
               <div className="flex justify-between mt-2.5">
                 {[
