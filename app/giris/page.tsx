@@ -46,26 +46,29 @@ export default function GirisPage() {
     setError('')
 
     const { error, data } = await supabase.auth.signInWithPassword({ email, password })
-
-    if (error) {
-      setError('E-posta veya şifre hatalı.')
-      setLoading(false)
-      return
-    }
-
-    // Custom domain'de ise tenant uyelik kontrolu
     const domainTenantId = readBrandTenantIdFromCookie()
-    if (domainTenantId && data.user) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('tenant_id')
-        .eq('id', data.user.id)
-        .maybeSingle()
 
-      if (!profile?.tenant_id || profile.tenant_id !== domainTenantId) {
-        // Bu domain'in tenant'ina ait degil -> cikis yap
-        await supabase.auth.signOut()
-        setError('Bu portala erişim yetkiniz yok. Ekip yöneticinizden davet isteyin.')
+    if (error || (domainTenantId && data.user)) {
+      // Custom domain'de: auth basarisiz da olsa tenant uyesi degilse de ayni hata
+      if (domainTenantId) {
+        let authorized = false
+        if (data?.user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('tenant_id')
+            .eq('id', data.user.id)
+            .maybeSingle()
+          authorized = !!(profile?.tenant_id && profile.tenant_id === domainTenantId)
+        }
+        if (!authorized) {
+          if (data?.user) await supabase.auth.signOut()
+          setError('Bu portala erişim yetkiniz yok.')
+          setLoading(false)
+          return
+        }
+      } else {
+        // Default domain: klasik hata mesaji
+        setError('E-posta veya şifre hatalı.')
         setLoading(false)
         return
       }
