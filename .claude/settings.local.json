@@ -43,7 +43,32 @@
       "Bash(npm run *)",
       "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\User1\\\\Desktop\\\\trevo\\\\app\" -Recurse -Directory -Depth 2 | Select-Object FullName | ForEach-Object { $_.FullName.Replace\\(\"C:\\\\Users\\\\User1\\\\Desktop\\\\trevo\\\\\", \"\"\\) })",
       "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\User1\\\\Desktop\\\\trevo\\\\node_modules\\\\next\\\\dist\\\\docs\\\\01-app\" -Recurse -Depth 2 -Directory | Select-Object FullName | ForEach-Object { $_.FullName.Replace\\(\"C:\\\\Users\\\\User1\\\\Desktop\\\\trevo\\\\node_modules\\\\next\\\\dist\\\\docs\\\\\", \"\"\\) })",
-      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\User1\\\\Desktop\\\\trevo\\\\components\" -Recurse -Directory | Select-Object FullName | ForEach-Object { $_.FullName.Replace\\(\"C:\\\\Users\\\\User1\\\\Desktop\\\\trevo\\\\\", \"\"\\) })"
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\User1\\\\Desktop\\\\trevo\\\\components\" -Recurse -Directory | Select-Object FullName | ForEach-Object { $_.FullName.Replace\\(\"C:\\\\Users\\\\User1\\\\Desktop\\\\trevo\\\\\", \"\"\\) })",
+      "Bash(ls node_modules/next/dist/docs/)",
+      "Bash(ls node_modules/next/dist/docs/**/*roxy*)",
+      "Bash(ls node_modules/next/dist/docs/**/*iddleware*)",
+      "Bash(npx eslint *)",
+      "Bash(echo \"exit:$?\")",
+      "Bash(node -e \"const fs=require\\('fs'\\),c=require\\('crypto'\\);let t=fs.readFileSync\\('.env.local','utf8'\\);const k=c.randomBytes\\(32\\).toString\\('hex'\\);if\\(/^ENCRYPTION_KEY=/m.test\\(t\\)\\){t=t.replace\\(/^ENCRYPTION_KEY=.*$/m,'ENCRYPTION_KEY='+k\\)}else{t=t.replace\\(/\\\\s*$/,''\\)+'\\\\nENCRYPTION_KEY='+k+'\\\\n'}fs.writeFileSync\\('.env.local',t\\);console.log\\('ENCRYPTION_KEY yazildi, uzunluk:'+k.length\\);\")",
+      "Bash(node -e \"const fs=require\\('fs'\\),p=require\\('path'\\);console.log\\('TAM YOL: '+p.resolve\\('.env.local'\\)\\);const lines=fs.readFileSync\\('.env.local','utf8'\\).split\\(/\\\\r?\\\\n/\\);console.log\\('TOPLAM SATIR: '+lines.length\\);console.log\\('---'\\);lines.forEach\\(\\(l,i\\)=>{const m=l.match\\(/^\\([A-Za-z_][A-Za-z0-9_]*\\)=\\(.*\\)$/\\);if\\(m\\){console.log\\(\\(i+1\\)+': '+m[1]+'='+\\(m[2].trim\\(\\)?'<dolu, '+m[2].length+' karakter>':'<BOS>'\\)\\)}else{console.log\\(\\(i+1\\)+': '+\\(l.trim\\(\\)===''?'\\(bos satir\\)':l\\)\\)}}\\);\")",
+      "Bash(node -e \"const fs=require\\('fs'\\);const lines=fs.readFileSync\\('.env.local','utf8'\\).split\\(/\\\\r?\\\\n/\\);lines.forEach\\(\\(l,i\\)=>{const m=l.match\\(/^\\([A-Za-z_][A-Za-z0-9_]*\\)=\\(.*\\)$/\\);console.log\\(\\(i+1\\)+': '+\\(m?m[1]+'='+\\(m[2].trim\\(\\)?'<dolu, '+m[2].length+' kr>':'<BOS>'\\):\\(l.trim\\(\\)===''?'\\(bos\\)':l\\)\\)\\)}\\);\")",
+      "Bash(curl *)",
+      "Bash(findstr /i \"X-Powered-By\")",
+      "Bash(findstr /L /i \"x-powered-by\")",
+      "Bash(Select-String -Pattern \"x-powered-by\" -SimpleMatch -Quiet)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(netstat -ano)",
+      "Bash(taskkill /F /PID 16928)",
+      "PowerShell($pids = \\(Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique\\); foreach \\($p in $pids\\) { try { Stop-Process -Id $p -Force -ErrorAction Stop; \"killed $p\" } catch { \"could not kill $p\" } }; Start-Sleep -Seconds 1; if \\(Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue\\) { \"port 3000 hala dolu\" } else { \"port 3000 bos\" })",
+      "PowerShell($pids = Get-NetTCPConnection -LocalPort 3000 -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique; foreach \\($p in $pids\\) { try { Stop-Process -Id $p -Force -ErrorAction Stop; \"killed $p\" } catch {} }; Start-Sleep -Seconds 1; if \\(Get-NetTCPConnection -LocalPort 3000 -State Listen -ErrorAction SilentlyContinue\\) { \"hala dinliyor\" } else { \"port bos\" })",
+      "Bash(git -C \"C:/Users/User1/Desktop/trevo\" status --short)",
+      "PowerShell(git commit *)",
+      "Bash(node *)",
+      "PowerShell(Get-NetTCPConnection *)",
+      "Bash(Start-Sleep -Seconds 8)",
+      "Bash(Get-Content \"C:\\\\Users\\\\User1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-User1-Desktop-trevo\\\\09b5b023-cea7-441e-8d20-418a613c4b61\\\\tasks\\\\b4m82wr01.output\")",
+      "PowerShell(npm run *)",
+      "PowerShell(Stop-Process *)"
     ]
   }
 }
