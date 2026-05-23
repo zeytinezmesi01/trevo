@@ -4,6 +4,7 @@ import { DEFAULT_BRAND } from '@/lib/types/brand'
 import DashboardSidebar from '@/components/dashboard-sidebar'
 import DashboardTopbar from '@/components/dashboard/topbar'
 import OnboardingModal from '@/components/onboarding-modal'
+import BrandStyle from '@/components/brand-style'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -24,6 +25,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         fontFamily: 'var(--font-body), Inter, sans-serif',
       }}
     >
+      <BrandStyle brand={brand} />
       <DashboardSidebar brand={brand} userName={userName} userEmail={userEmail} />
 
       <main

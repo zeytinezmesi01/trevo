@@ -29,7 +29,27 @@ export default async function PortalPage({ params }: { params: Promise<{ token: 
 
   const headersList = await headers()
   const host = headersList.get('host') || ''
-  const brand = await generatePortalBrand(admin, host)
+  let brand = await generatePortalBrand(admin, host)
+
+  // localhost/trevo.app gibi varsayılan domain'lerde tenant brand'ini bul
+  if (brand.brandName === DEFAULT_BRAND.brandName && client.tenant_id) {
+    const { data: tenantProfile } = await admin
+      .from('profiles')
+      .select('brand_name, brand_logo_url, brand_primary_color, brand_domain')
+      .eq('tenant_id', client.tenant_id)
+      .eq('role', 'owner')
+      .not('brand_name', 'is', null)
+      .maybeSingle()
+
+    if (tenantProfile) {
+      brand = {
+        brandName: (tenantProfile.brand_name as string) || DEFAULT_BRAND.brandName,
+        brandLogoUrl: (tenantProfile.brand_logo_url as string) || DEFAULT_BRAND.brandLogoUrl,
+        brandPrimaryColor: (tenantProfile.brand_primary_color as string) || DEFAULT_BRAND.brandPrimaryColor,
+        brandDomain: (tenantProfile.brand_domain as string) || DEFAULT_BRAND.brandDomain,
+      }
+    }
+  }
 
   const typeColor: Record<string, string> = {
     PDF: 'bg-red-500', AI: 'bg-orange-500', ZIP: 'bg-purple-500',
@@ -37,8 +57,6 @@ export default async function PortalPage({ params }: { params: Promise<{ token: 
     MP4: 'bg-pink-500', DOC: 'bg-blue-600', DOCX: 'bg-blue-600',
     XLS: 'bg-green-600', XLSX: 'bg-green-600', FILE: 'bg-gray-500',
   }
-
-  const defaultedBrand = brand.brandName ? brand : DEFAULT_BRAND
 
   return (
     <>
@@ -48,7 +66,7 @@ export default async function PortalPage({ params }: { params: Promise<{ token: 
         <div className="bg-white border-b border-gray-100">
           <div className="max-w-3xl mx-auto px-6 py-5 flex items-center justify-between">
             <div>
-              <BrandLogo brand={defaultedBrand} className="text-lg font-bold tracking-tight text-primary" />
+              <BrandLogo brand={brand} className="text-lg font-bold tracking-tight text-primary" />
               <div className="text-xs text-gray-400">Müşteri Portalı</div>
             </div>
             <div className="text-right">

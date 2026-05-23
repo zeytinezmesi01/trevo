@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
@@ -106,6 +107,7 @@ export default function DashboardSidebar({
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
+  const [logoError, setLogoError] = useState(false)
 
   const handleCikis = async () => {
     await supabase.auth.signOut()
@@ -135,17 +137,26 @@ export default function DashboardSidebar({
         className="flex items-center gap-2.5 flex-shrink-0"
         style={{ height: '64px', padding: '0 20px', borderBottom: '1px solid #e8edf8' }}
       >
-        <div
-          className="flex items-center justify-center flex-shrink-0"
-          style={{
-            width: '32px', height: '32px',
-            background: 'linear-gradient(135deg, #4f7dff, #6a96ff)',
-            borderRadius: '9px',
-            boxShadow: '0 2px 8px rgba(79,125,255,0.35)',
-          }}
-        >
-          <Image src="/logo.svg" alt="Trevo" width={20} height={20} />
-        </div>
+        {brand.brandLogoUrl && !logoError ? (
+          <img
+            src={brand.brandLogoUrl}
+            alt={brand.brandName || 'Logo'}
+            className="h-7 w-auto max-w-[120px] object-contain rounded"
+            onError={() => setLogoError(true)}
+          />
+        ) : (
+          <div
+            className="flex items-center justify-center flex-shrink-0"
+            style={{
+              width: '32px', height: '32px',
+              background: 'linear-gradient(135deg, var(--brand-primary, #4f7dff), var(--brand-primary-hover, #6a96ff))',
+              borderRadius: '9px',
+              boxShadow: '0 2px 8px rgba(79,125,255,0.35)',
+            }}
+          >
+            <Image src="/logo.svg" alt="Trevo" width={20} height={20} />
+          </div>
+        )}
         <span
           style={{
             fontFamily: 'var(--font-display), Plus Jakarta Sans, sans-serif',
@@ -155,7 +166,7 @@ export default function DashboardSidebar({
             color: '#0f172a',
           }}
         >
-          trevo
+          {brand.brandName || 'trevo'}
         </span>
       </div>
 
@@ -183,15 +194,15 @@ export default function DashboardSidebar({
                 borderRadius: '8px',
                 fontSize: '13.5px',
                 fontWeight: 500,
-                color: active ? '#ffffff' : '#64748b',
-                background: active ? '#4f7dff' : 'transparent',
+                color: active ? 'var(--brand-primary-foreground, #ffffff)' : '#64748b',
+                background: active ? 'var(--brand-primary, #4f7dff)' : 'transparent',
                 boxShadow: active ? '0 2px 8px rgba(79,125,255,0.3)' : 'none',
                 textDecoration: 'none',
               }}
               onMouseEnter={(e) => {
                 if (!active) {
                   e.currentTarget.style.background = '#eef2ff'
-                  e.currentTarget.style.color = '#4f7dff'
+                  e.currentTarget.style.color = 'var(--brand-primary, #4f7dff)'
                 }
               }}
               onMouseLeave={(e) => {
@@ -236,7 +247,7 @@ export default function DashboardSidebar({
               onMouseEnter={(e) => {
                 if (!active) {
                   e.currentTarget.style.background = '#eef2ff'
-                  e.currentTarget.style.color = '#4f7dff'
+                  e.currentTarget.style.color = 'var(--brand-primary, #4f7dff)'
                 }
               }}
               onMouseLeave={(e) => {
@@ -269,7 +280,7 @@ export default function DashboardSidebar({
               onMouseEnter={(e) => {
                 if (!active) {
                   e.currentTarget.style.background = '#eef2ff'
-                  e.currentTarget.style.color = '#4f7dff'
+                  e.currentTarget.style.color = 'var(--brand-primary, #4f7dff)'
                 }
               }}
               onMouseLeave={(e) => {
@@ -315,7 +326,7 @@ export default function DashboardSidebar({
             className="flex items-center justify-center flex-shrink-0"
             style={{
               width: '36px', height: '36px', borderRadius: '10px',
-              background: 'linear-gradient(135deg, #4f7dff, #7aa0ff)',
+              background: 'linear-gradient(135deg, var(--brand-primary, #4f7dff), var(--brand-primary-hover, #7aa0ff))',
               fontFamily: 'var(--font-display), Plus Jakarta Sans, sans-serif',
               fontWeight: 700, fontSize: '13px', color: 'white',
             }}

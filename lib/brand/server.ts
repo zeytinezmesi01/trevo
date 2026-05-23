@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Brand, DEFAULT_BRAND } from '@/lib/types/brand'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 function buildBrandFromProfile(profile: Record<string, unknown> | null): Brand {
   if (!profile) return { ...DEFAULT_BRAND }
@@ -54,8 +55,6 @@ export async function getBrandByUserId(userId: string): Promise<Brand> {
   brandCache.set(`user:${userId}`, { brand, expiresAt: Date.now() + CACHE_TTL })
   return brand
 }
-
-import type { SupabaseClient } from '@supabase/supabase-js'
 
 export async function generatePortalBrand(
   supabase: SupabaseClient,
