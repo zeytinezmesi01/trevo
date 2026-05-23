@@ -118,7 +118,7 @@ export async function POST() {
     })
     .eq('id', user.id)
 
-  clearBrandCache(user.id, domain!)
+  clearBrandCache()
 
   return NextResponse.json({ status, error, checkedAt: now, vercelConfigured })
 }

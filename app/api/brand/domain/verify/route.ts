@@ -97,7 +97,7 @@ export async function POST(request: Request) {
   // Vercel'e domain ekle (env varsa otomatik, yoksa atla)
   const vercel = await addDomainToVercel(domain)
 
-  clearBrandCache(undefined, domain)
+  clearBrandCache()
 
   return NextResponse.json({
     domain,
