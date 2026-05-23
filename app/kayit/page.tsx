@@ -42,11 +42,9 @@ function KayitForm() {
     const profileId = readBrandFromCookie()
     if (!profileId) return
     const loadBrand = async () => {
-      const { data } = await supabase
-        .from('profiles')
-        .select('brand_name, brand_logo_url, brand_primary_color')
-        .eq('id', profileId)
-        .maybeSingle()
+      const res = await fetch(`/api/brand/profile?id=${encodeURIComponent(profileId)}`)
+      if (!res.ok) return
+      const data = await res.json()
       if (data) {
         setBrand({
           brandName: data.brand_name || DEFAULT_BRAND.brandName,

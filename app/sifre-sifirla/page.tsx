@@ -17,7 +17,7 @@ export default function SifreSifirlaPage() {
     setError('')
 
     const { error: err } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/dashboard`,
+      redirectTo: `${window.location.origin}/giris`,
     })
 
     if (err) setError('Bir hata oluştu. Lütfen tekrar deneyin.')
