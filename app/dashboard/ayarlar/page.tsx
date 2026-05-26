@@ -323,7 +323,7 @@ export default function AyarlarPage() {
                 const res = await fetch('/api/account/delete', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ email }),
+                  body: JSON.stringify({ confirmEmail: email }),
                 })
                 if (!res.ok) {
                   const data = await res.json().catch(() => ({}))

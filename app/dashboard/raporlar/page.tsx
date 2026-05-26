@@ -13,7 +13,7 @@ const formatTRY = (v: number) =>
   new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(v)
 
 function parseSizeToMB(s: string): number {
-  const num = parseFloat(s)
+  const num = parseFloat(s.replace(',', '.'))
   if (s.toLowerCase().includes('gb')) return num * 1024
   if (s.toLowerCase().includes('kb')) return num / 1024
   return num // assume MB

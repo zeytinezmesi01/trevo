@@ -36,19 +36,25 @@ export default function OnboardingModal() {
       if (!user) return
       setUserId(user.id)
 
-      // Bu oturum/kullanıcı için atlandıysa gösterme
+      // Bu oturum/kullanıcı için atlandıysa gösterme (hızlı yol: localStorage)
       if (typeof window !== 'undefined' && localStorage.getItem(`${SKIP_KEY}_${user.id}`)) return
 
       // Profil bilgilerini al
       const { data: profile } = await supabase
         .from('profiles')
-        .select('company_name, company_tax_number, company_tax_office, brand_name, brand_primary_color, full_name, role')
+        .select('company_name, company_tax_number, company_tax_office, brand_name, brand_primary_color, full_name, role, onboarding_dismissed_at')
         .eq('id', user.id)
         .maybeSingle()
 
       // Sadece owner'a goster, ekip uyelerine asla
       if (!profile || profile.role !== 'owner') return
       if (profile.company_name && profile.company_name.trim()) return
+
+      // DB'de kalıcı olarak kapatılmışsa gösterme
+      if (profile.onboarding_dismissed_at) {
+        if (typeof window !== 'undefined') localStorage.setItem(`${SKIP_KEY}_${user.id}`, '1')
+        return
+      }
 
       // Olabildiğince ön doldur
       setForm({
@@ -64,9 +70,14 @@ export default function OnboardingModal() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const handleSkip = () => {
-    if (userId && typeof window !== 'undefined') {
-      localStorage.setItem(`${SKIP_KEY}_${userId}`, '1')
+  const handleSkip = async () => {
+    if (userId) {
+      if (typeof window !== 'undefined') localStorage.setItem(`${SKIP_KEY}_${userId}`, '1')
+      // DB'ye de yaz — tarayıcı değiştiğinde de geçerli kalsın
+      await supabase
+        .from('profiles')
+        .update({ onboarding_dismissed_at: new Date().toISOString() })
+        .eq('id', userId)
     }
     setShow(false)
   }

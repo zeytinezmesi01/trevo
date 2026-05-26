@@ -21,7 +21,9 @@ export async function sendTeamInvitation({
   inviteUrl: string
 }) {
   const safeTenantName = escapeHtml(tenantName)
-  const r = getResend(); if (!r) return; await r.emails.send({
+  const r = getResend()
+  if (!r) { console.warn('[email] RESEND_API_KEY eksik — e-posta gönderilmedi'); return }
+  await r.emails.send({
     from: `Trevo <${FROM_EMAIL}>`,
     to: email,
     subject: `${tenantName} sizi ekibine davet etti`,
@@ -74,12 +76,14 @@ export async function sendFileNotification({
   const brandName = escapeHtml(b.brandName || 'Trevo')
   // O-8: CSS injection koruması — sadece geçerli hex renk kabul et
   const rawColor = b.brandPrimaryColor || '#111827'
-  const primaryColor = /^#[0-9a-fA-F]{6}$/.test(rawColor) ? rawColor : '#111827'
+  const primaryColor = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(rawColor) ? rawColor : '#111827'
   const fromEmail = process.env.RESEND_FROM_EMAIL || `bildirim@trevo-delta.vercel.app`
   const safeClientName = escapeHtml(clientName)
   const safeFileName = escapeHtml(fileName)
 
-  const r = getResend(); if (!r) return; await r.emails.send({
+  const r = getResend()
+  if (!r) { console.warn('[email] RESEND_API_KEY eksik — e-posta gönderilmedi'); return }
+  await r.emails.send({
     from: `${brandName} <${fromEmail}>`,
     to: clientEmail,
     subject: `Yeni dosyanız hazır: ${fileName}`,

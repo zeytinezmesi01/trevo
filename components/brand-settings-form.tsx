@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { invalidateBrandCache } from '@/lib/brand/client'
 import BrandPreview from '@/components/brand-preview'
 
 interface DomainVerifyResponse {
@@ -135,6 +136,7 @@ export default function BrandSettingsForm() {
         }
         return
       }
+      invalidateBrandCache()
       setSuccess(true)
       setTimeout(() => setSuccess(false), 3000)
     } catch {

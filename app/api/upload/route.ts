@@ -62,8 +62,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Dosya boyutu 50 MB ile sınırlıdır' }, { status: 413 })
   }
 
-  // fileName temizleme: yol ayracı ve .. içermesin
-  const safeName = file.name.replace(/[/\\]/g, '_').replace(/\.\./g, '')
+  // fileName temizleme: yalnızca güvenli karakterlere izin ver
+  const safeName = (file.name.split(/[/\\]/).pop() || 'dosya').replace(/[^a-zA-Z0-9._\-]/g, '_') || 'dosya'
 
   const supabase = await createClient()
 

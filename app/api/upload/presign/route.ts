@@ -74,8 +74,11 @@ export async function POST(request: Request) {
 
   const publicUrl = `${R2_PUBLIC_URL}/${key}`
 
+  // Brand logo: her zaman skipFileRecord — request body'den bypass edilemesin
+  const effectiveSkipFileRecord = purpose === 'brand' ? true : skipFileRecord
+
   // Brand logo gibi varlıklar Dosyalar listesinde görünmemeli
-  if (!skipFileRecord) {
+  if (!effectiveSkipFileRecord) {
     const supabase = await createClient()
     const sizeMB = (fileSize / 1024 / 1024).toFixed(1)
     const fileTypeU = ext?.toUpperCase() || 'FILE'

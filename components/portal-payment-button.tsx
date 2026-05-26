@@ -2,19 +2,6 @@
 
 import { useState } from 'react'
 
-function sanitizeFormHtml(html: string): string {
-  return html
-    // script etiketleri
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-    // tehlikeli etiketler
-    .replace(/<(iframe|object|embed|applet|meta|link|base)\b[^>]*>/gi, '')
-    // inline event handler'lar (onerror, onload, onclick vb.)
-    .replace(/\s+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, '')
-    // javascript: ve data: URL'leri
-    .replace(/(href|src|action|formaction)\s*=\s*(?:"javascript:[^"]*"|'javascript:[^']*')/gi, '$1=""')
-    .replace(/(href|src|action|formaction)\s*=\s*(?:"data:[^"]*"|'data:[^']*')/gi, '$1=""')
-}
-
 export default function PortalPaymentButton({
   invoiceId,
   portalToken,
@@ -108,7 +95,12 @@ export default function PortalPaymentButton({
                 <p style={{ color: '#ef4444', fontSize: 14 }}>{error}</p>
               </div>
             ) : formContent ? (
-              <div dangerouslySetInnerHTML={{ __html: sanitizeFormHtml(formContent) }} />
+              <iframe
+                srcDoc={formContent}
+                sandbox="allow-scripts allow-forms allow-top-navigation-by-user-activation"
+                style={{ border: 'none', width: '100%', minHeight: 480 }}
+                title="Ödeme Formu"
+              />
             ) : null}
           </div>
         </div>

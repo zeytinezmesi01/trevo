@@ -91,7 +91,8 @@ export async function POST(request: Request) {
       .eq('id', tenantId)
       .maybeSingle()
 
-    const id = await createInvoice(tenantId, tenant?.owner_id || '', body, admin)
+    if (!tenant?.owner_id) return NextResponse.json({ error: 'Kiracı bulunamadı' }, { status: 500 })
+    const id = await createInvoice(tenantId, tenant.owner_id, body, admin)
 
     after(() => {
       const items: InvoiceItem[] = body.items || []

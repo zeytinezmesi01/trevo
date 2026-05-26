@@ -7,7 +7,7 @@ import { Brand, DEFAULT_BRAND } from '@/lib/types/brand'
 // eski değerin sürekli görünmesine neden oluyordu
 let cachedBrand: Brand | null = null
 let cacheTime = 0
-const CACHE_TTL = 5 * 60 * 1000
+const CACHE_TTL = 60 * 1000
 
 export async function getBrandForDashboard(): Promise<Brand> {
   if (cachedBrand && Date.now() - cacheTime < CACHE_TTL) return cachedBrand
@@ -30,6 +30,11 @@ export async function getBrandForDashboard(): Promise<Brand> {
   }
   cacheTime = Date.now()
   return cachedBrand
+}
+
+export function invalidateBrandCache() {
+  cachedBrand = null
+  cacheTime = 0
 }
 
 export function readBrandFromCookie(): string | null {

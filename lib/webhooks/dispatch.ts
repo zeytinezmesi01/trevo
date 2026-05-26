@@ -4,7 +4,8 @@ import { decryptSecret } from '@/lib/crypto'
 import type { WebhookEvent } from './events'
 
 const MAX_BODY_SNAPLEN = 2000
-const RETRY_DELAYS = [0, 2000, 5000] // milisaniye cinsinden
+// Exponential backoff: 0ms, 2s, 8s, 32s — her adıma 0-999ms jitter eklenir
+const RETRY_DELAYS = [0, 2000, 8000, 32000]
 
 type WebhookPayload = Record<string, unknown>
 
@@ -16,6 +17,9 @@ function isUrlSafe(urlStr: string): boolean {
     const host = url.hostname.toLowerCase()
     if (host === 'localhost' || host === '127.0.0.1' || host === '::1') return false
     if (host === '0.0.0.0' || host.endsWith('.local') || host.endsWith('.internal')) return false
+    // IPv6: link-local (fe80::/10), ULA (fc00::/7), loopback, IPv4-mapped
+    if (/^fe[89ab][0-9a-f]:/i.test(host) || /^f[cd][0-9a-f]{2}:/i.test(host)) return false
+    if (/^::ffff:/i.test(host)) return false
     const parts = host.split('.').map(Number)
     if (parts.length === 4 && parts.every((p) => Number.isFinite(p))) {
       if (parts[0] === 10) return false // 10.0.0.0/8
@@ -102,7 +106,7 @@ async function sendWithRetry(
 
   for (let attempt = 0; attempt < RETRY_DELAYS.length; attempt++) {
     if (attempt > 0) {
-      await sleep(RETRY_DELAYS[attempt])
+      await sleep(RETRY_DELAYS[attempt] + Math.floor(Math.random() * 1000))
     }
 
     try {

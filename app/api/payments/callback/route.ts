@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getPaymentProvider } from '@/lib/payment'
 import { dispatchEvent } from '@/lib/webhooks/dispatch'
 import { WEBHOOK_EVENTS } from '@/lib/webhooks/events'
+import { escapeHtml } from '@/lib/escape-html'
 
 export const runtime = 'nodejs'
 
@@ -45,6 +46,11 @@ export async function POST(request: Request) {
 
   if (!payment) {
     return NextResponse.json({ error: 'Ödeme bulunamadı' }, { status: 404 })
+  }
+
+  // Replay koruması: zaten başarıyla işlenmiş ödeme tekrar işlenmesin
+  if (payment.status === 'success' && payment.provider_payment_id) {
+    return NextResponse.json({ ok: true, alreadyProcessed: true })
   }
 
   // Yardımcı: sonuç sayfasına yönlendir
@@ -109,6 +115,17 @@ export async function POST(request: Request) {
             updated_at: new Date().toISOString(),
           })
           .eq('id', payment.id)
+
+        after(() => {
+          dispatchEvent(payment.tenant_id as string, WEBHOOK_EVENTS.PAYMENT_FAILED, {
+            id: payment.id as string,
+            invoice_id: payment.invoice_id as string,
+            reason: 'amount_mismatch',
+            expected: expectedAmount,
+            received: actualAmount,
+          }).catch(() => {})
+        })
+
         return buildResultRedirect()
       }
 
@@ -297,12 +314,3 @@ async function sendPaymentNotification(params: {
   })
 }
 
-// F: HTML escape yardımcısı
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;')
-}

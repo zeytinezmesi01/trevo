@@ -26,9 +26,11 @@ export function encryptSecret(plaintext: string): string {
 
 export function decryptSecret(stored: string): string {
   if (!stored) return ''
-  // Şifrelenmemiş (eski kayıt) → düz metin kabul et (geriye dönük uyumluluk)
+  // Şifrelenmemiş (eski kayıt) → şimdilik düz metin kabul et, ama uyar.
+  // TODO: Tüm kayıtlar re-encrypt migration ile şifrelendikten sonra bu branch kaldırılacak;
+  //       o zaman bu şube Error fırlat ile değiştirilecek (strict mode).
   if (!stored.includes(':')) {
-    console.warn('Legacy plaintext secret detected, re-encrypt recommended')
+    console.warn('[crypto] Legacy plaintext secret kullanılıyor — re-encrypt migration çalıştırın')
     return stored
   }
   const parts = stored.split(':')

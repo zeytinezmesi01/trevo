@@ -2,6 +2,7 @@ import { NextResponse, after } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { dispatchEvent } from '@/lib/webhooks/dispatch'
 import { WEBHOOK_EVENTS } from '@/lib/webhooks/events'
+import { rateLimit } from '@/lib/rate-limit'
 
 async function generateInvoiceNumber(tenantId: string): Promise<string> {
   const admin = createAdminClient()
@@ -21,6 +22,10 @@ export async function POST(request: Request) {
   const body = await request.json()
   const { token, description, amount, note } = body
   if (!token) return NextResponse.json({ error: 'Token gerekli' }, { status: 400 })
+
+  if (!rateLimit(`invoice-request:${token}`, 10, 60_000)) {
+    return NextResponse.json({ error: 'Çok fazla istek' }, { status: 429 })
+  }
 
   // amount doğrulama
   const parsedAmount = parseFloat(amount)

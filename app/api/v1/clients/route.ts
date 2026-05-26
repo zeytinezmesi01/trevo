@@ -15,7 +15,8 @@ async function authHandler(request: Request) {
 function handleApiError(e: unknown) {
   const msg = e instanceof Error ? e.message : 'Yetkisiz'
   const status = (e as Error & { status?: number }).status || 401
-  return NextResponse.json({ error: msg }, { status })
+  const headers = status === 401 ? { 'WWW-Authenticate': 'Bearer realm="Trevo API"' } : undefined
+  return NextResponse.json({ error: msg }, { status, headers })
 }
 
 // GET /api/v1/clients

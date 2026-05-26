@@ -3,6 +3,10 @@ import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { NextResponse, type NextRequest } from 'next/server'
 import { DEFAULT_DOMAINS } from '@/lib/constants'
 
+type BrandCacheEntry = { id: string; tenant_id: string | null; expiresAt: number }
+const brandDomainCache = new Map<string, BrandCacheEntry>()
+const BRAND_CACHE_TTL = 60_000
+
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
@@ -45,18 +49,30 @@ export async function proxy(request: NextRequest) {
   )
 
   if (!isDefaultDomain) {
-    // RLS bypass: proxy'de kullanıcı oturumu olmayabilir, admin client kullan
-    const admin = createAdminClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { autoRefreshToken: false, persistSession: false } }
-    )
-    const { data: profile } = await admin
-      .from('profiles')
-      .select('id, tenant_id, brand_domain_status')
-      .eq('brand_domain', domain)
-      .eq('brand_domain_status', 'active')
-      .maybeSingle()
+    let profile: BrandCacheEntry | null = null
+
+    const cached = brandDomainCache.get(domain)
+    if (cached && cached.expiresAt > Date.now()) {
+      profile = cached
+    } else {
+      // RLS bypass: proxy'de kullanıcı oturumu olmayabilir, admin client kullan
+      const admin = createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { autoRefreshToken: false, persistSession: false } }
+      )
+      const { data: row } = await admin
+        .from('profiles')
+        .select('id, tenant_id, brand_domain_status')
+        .eq('brand_domain', domain)
+        .eq('brand_domain_status', 'active')
+        .maybeSingle()
+
+      if (row) {
+        profile = { id: row.id as string, tenant_id: row.tenant_id as string | null, expiresAt: Date.now() + BRAND_CACHE_TTL }
+        brandDomainCache.set(domain, profile)
+      }
+    }
 
     if (profile) {
       supabaseResponse.headers.set('x-brand-profile-id', profile.id as string)

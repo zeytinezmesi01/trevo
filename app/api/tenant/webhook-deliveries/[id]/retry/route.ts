@@ -15,7 +15,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
 
   const { data: delivery } = await supabase
     .from('webhook_deliveries')
-    .select('id, endpoint_id, event_type, payload')
+    .select('id, endpoint_id, event_type, payload, response_status, response_body, attempts')
     .eq('id', id)
     .eq('tenant_id', ctx.tenantId)
     .maybeSingle()
@@ -32,13 +32,14 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
 
   if (!endpoint) return NextResponse.json({ error: 'Webhook endpoint bulunamadı' }, { status: 404 })
 
-  // TODO: Burada dispatch mantığını doğrudan çağırmak yerine yeniden gönderme yapılabilir.
-  // Şimdilik delivery'i pending'e çekip dispatch ediyoruz.
+  // Önceki yanıtı koru — tekrar deneme geçmişini kaybetme
   await supabase
     .from('webhook_deliveries')
     .update({
       status: 'pending',
       attempts: 0,
+      previous_response_status: delivery.response_status,
+      previous_response_body: delivery.response_body,
       response_status: null,
       response_body: null,
     })

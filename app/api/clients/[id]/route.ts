@@ -47,6 +47,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (key in body) update[key] = body[key]
   }
 
+  if (update.name !== undefined && (!update.name || !(update.name as string).trim())) {
+    return NextResponse.json({ error: 'Müşteri adı boş olamaz' }, { status: 400 })
+  }
+
   const { error } = await supabase
     .from('clients')
     .update(update)

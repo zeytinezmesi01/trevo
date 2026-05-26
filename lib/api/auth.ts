@@ -1,4 +1,5 @@
 import crypto from 'node:crypto'
+import { after } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 const KEY_PREFIX = 'trv_'
@@ -43,12 +44,11 @@ export async function authenticateApiRequest(request: Request): Promise<AuthResu
 
   if (!data) return null
 
-  // last_used_at'i arka planda güncelle (bloklama)
-  admin
-    .from('api_keys')
-    .update({ last_used_at: new Date().toISOString() })
-    .eq('id', data.id)
-    .then(() => {}, () => {})
+  after(async () => {
+    try {
+      await admin.from('api_keys').update({ last_used_at: new Date().toISOString() }).eq('id', data.id)
+    } catch {}
+  })
 
   return { tenantId: data.tenant_id as string, apiKeyId: data.id as string, role: data.role as string }
 }

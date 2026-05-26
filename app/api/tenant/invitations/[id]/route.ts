@@ -17,9 +17,10 @@ export async function DELETE(
   const supabase = await createClient()
   const { error } = await supabase
     .from('team_invitations')
-    .update({ status: 'expired' })
+    .delete()
     .eq('id', id)
     .eq('tenant_id', ctx.tenantId)
+    .in('status', ['pending', 'expired'])
 
   if (error) {
     return NextResponse.json({ error: 'Davet iptal edilemedi' }, { status: 500 })

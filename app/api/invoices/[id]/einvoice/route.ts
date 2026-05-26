@@ -67,6 +67,7 @@ async function ensureTenantProvisioned(
     phone: (profile?.company_phone as string) || undefined,
   })
 
+  // Atomik yazma: yalnızca hâlâ NULL ise güncelle (eş zamanlı istek yarışını önler)
   await supabase
     .from('tenants')
     .update({
@@ -77,8 +78,16 @@ async function ensureTenantProvisioned(
       einvoice_registered_at: new Date().toISOString(),
     })
     .eq('id', tenantId)
+    .is('einvoice_account_id', null)
 
-  return result.accountId
+  // Yarışı kaybetmiş olabiliriz — DB'deki kesin değeri oku
+  const { data: after } = await supabase
+    .from('tenants')
+    .select('einvoice_account_id')
+    .eq('id', tenantId)
+    .single()
+
+  return (after?.einvoice_account_id as string) || result.accountId
 }
 
 // POST /api/invoices/[id]/einvoice — e-Belge gönder

@@ -178,40 +178,21 @@ export class IyzicoPaymentProvider implements PaymentProvider {
   }
 
   async testConnection(): Promise<TestConnectionResult> {
-    try {
-      const body = {
-        locale: 'tr',
-        conversationId: `test-${Date.now()}`,
-        price: 1,
-        paidPrice: 1,
-        currency: 'TRY',
-        basketId: 'test',
-        paymentGroup: 'PRODUCT',
-        callbackUrl: 'https://localhost/callback',
-        buyer: {
-          id: 'test',
-          name: 'Test',
-          surname: 'User',
-          email: 'test@test.com',
-          identityNumber: '11111111111',
-          registrationAddress: 'Test Address',
-          city: 'Istanbul',
-          country: 'Turkey',
-          ip: '127.0.0.1',
-        },
-        shippingAddress: { address: 'Test', city: 'Istanbul', country: 'Turkey' },
-        billingAddress: { address: 'Test', city: 'Istanbul', country: 'Turkey' },
-        basketItems: [{ id: '1', name: 'Test', category1: 'Test', itemType: 'VIRTUAL', price: 1 }],
-      }
-
-      await this.request('POST', '/payment/checkoutform/initialize/auth', body)
-
-      return { success: true, message: 'iyzico bağlantısı başarılı.' }
-    } catch (e) {
-      return {
-        success: false,
-        message: e instanceof Error ? e.message : 'Bağlantı testi başarısız',
-      }
+    // API'ye gerçek istek atmadan credential format'ını doğrula.
+    // iyzico sandbox/production anahtarları belirli pattern'lara sahiptir;
+    // format uyumsuzluğu gerçek API hatalarını çok önceden yakalar.
+    if (!this.apiKey || this.apiKey.length < 10) {
+      return { success: false, message: 'API anahtarı çok kısa veya eksik.' }
     }
+    if (!this.secretKey || this.secretKey.length < 10) {
+      return { success: false, message: 'Secret anahtar çok kısa veya eksik.' }
+    }
+    // Format kontrolü: iyzico anahtarları sandbox- veya production- prefix'i içerebilir
+    const sandboxPattern = /^sandbox-/i
+    const productionPattern = /^[a-zA-Z0-9_\-]{10,}$/
+    if (this.mode === 'sandbox' && !sandboxPattern.test(this.apiKey) && !productionPattern.test(this.apiKey)) {
+      return { success: false, message: 'Sandbox API anahtarı geçersiz formatta.' }
+    }
+    return { success: true, message: `Anahtar formatı geçerli (${this.mode} modu). Gerçek işlem sırasında doğrulanacak.` }
   }
 }

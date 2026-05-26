@@ -25,10 +25,14 @@ type IndexData = {
   articles: ArticleMeta[]
 }
 
+let _indexCache: IndexData | null = null
+
 function loadIndex(): IndexData {
+  if (_indexCache) return _indexCache
   const filePath = path.join(CONTENT_DIR, 'index.json')
   const raw = fs.readFileSync(filePath, 'utf-8')
-  return JSON.parse(raw) as IndexData
+  _indexCache = JSON.parse(raw) as IndexData
+  return _indexCache
 }
 
 export function getCategories(): CategoryGroup[] {

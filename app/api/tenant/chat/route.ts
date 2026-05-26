@@ -49,8 +49,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Mesaj bos olamaz' }, { status: 400 })
   }
 
-  if (message.length > 1000) {
-    return NextResponse.json({ error: 'Mesaj 1000 karakteri asamaz' }, { status: 400 })
+  if (message.length > 2000) {
+    return NextResponse.json({ error: 'Mesaj 2000 karakteri asamaz' }, { status: 400 })
   }
 
   const supabase = await createClient()

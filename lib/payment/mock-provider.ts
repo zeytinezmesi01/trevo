@@ -50,10 +50,12 @@ export class MockPaymentProvider implements PaymentProvider {
 
   async retrieveCheckoutResult(token: string): Promise<CheckoutRetrieveResult> {
     if (token.startsWith('mock-token-')) {
+      // paidPrice açıkça set edilmeli — null bırakılırsa callback'te payment.amount'a fallback yapılır
+      const mockPaymentId = token.replace('mock-token-', '')
       return {
         status: 'success',
-        providerPaymentId: `mock-payment-${Date.now()}`,
-        paidPrice: null,
+        providerPaymentId: `mock-payment-${mockPaymentId}`,
+        paidPrice: 0, // callback route payment.amount'tan okuyacak; 0 → amount_tolerance kontrolü tetiklenir
         raw: { mock: true, token },
       }
     }
