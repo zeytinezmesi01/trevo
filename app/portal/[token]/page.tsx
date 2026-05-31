@@ -90,7 +90,7 @@ export default async function PortalPage({ params }: { params: Promise<{ token: 
             <div className="space-y-3">
               {files.map((file) => (
                 <div key={file.id} className="bg-white rounded-2xl border border-gray-100 px-5 py-4 flex items-center gap-4">
-                  <div className={`w-10 h-10 ${typeColor[file.file_type] || 'bg-gray-500'} rounded-xl flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
+                  <div className={`w-10 h-10 ${typeColor[file.file_type || ''] || 'bg-gray-500'} rounded-xl flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
                     {file.file_type?.slice(0, 3)}
                   </div>
                   <div className="flex-1 min-w-0">
