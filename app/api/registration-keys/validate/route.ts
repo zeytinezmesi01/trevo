@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server'
 import crypto from 'node:crypto'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { rateLimit } from '@/lib/rate-limit'
+import { rateLimitDb } from '@/lib/rate-limit'
 
 export async function POST(request: Request) {
   const ip = request.headers.get('x-forwarded-for') || 'unknown'
-  if (!rateLimit(`regkey-validate:${ip}`, 10, 60_000)) {
+  // K-2: anon brute-force yüzeyi — dağıtık rate limit
+  if (!(await rateLimitDb(`regkey-validate:${ip}`, 10, 60_000))) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
   }
   const body = await request.json().catch(() => null)

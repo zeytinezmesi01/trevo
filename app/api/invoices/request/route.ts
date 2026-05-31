@@ -2,7 +2,7 @@ import { NextResponse, after } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { dispatchEvent } from '@/lib/webhooks/dispatch'
 import { WEBHOOK_EVENTS } from '@/lib/webhooks/events'
-import { rateLimit } from '@/lib/rate-limit'
+import { rateLimitDb } from '@/lib/rate-limit'
 
 async function generateInvoiceNumber(tenantId: string): Promise<string> {
   const admin = createAdminClient()
@@ -23,7 +23,8 @@ export async function POST(request: Request) {
   const { token, description, amount, note } = body
   if (!token) return NextResponse.json({ error: 'Token gerekli' }, { status: 400 })
 
-  if (!rateLimit(`invoice-request:${token}`, 10, 60_000)) {
+  // O-8 + K-2: anon portal token — dağıtık rate limit
+  if (!(await rateLimitDb(`invoice-request:${token}`, 10, 60_000))) {
     return NextResponse.json({ error: 'Çok fazla istek' }, { status: 429 })
   }
 

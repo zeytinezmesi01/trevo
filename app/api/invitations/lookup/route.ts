@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { rateLimit } from '@/lib/rate-limit'
+import { rateLimitDb } from '@/lib/rate-limit'
 
 // GET /api/invitations/lookup?token=xxx — davet bilgilerini token ile sorgula (anon erişim)
 export async function GET(request: Request) {
   const ip = request.headers.get('x-forwarded-for') || 'unknown'
-  if (!rateLimit(`invite-lookup:${ip}`, 10, 60_000)) {
+  // K-2: anon token enumeration yüzeyi — dağıtık rate limit
+  if (!(await rateLimitDb(`invite-lookup:${ip}`, 10, 60_000))) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
   }
   const { searchParams } = new URL(request.url)

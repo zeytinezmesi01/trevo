@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getPaymentProvider } from '@/lib/payment'
-import { rateLimit } from '@/lib/rate-limit'
+import { rateLimitDb } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
 
@@ -15,8 +15,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Geçersiz portal token' }, { status: 400 })
   }
 
-  // O-1: portal token başına ödeme başlatma rate limit
-  if (!rateLimit(`payments-init:${portalToken}`, 10, 60_000)) {
+  // O-1 + K-2: portal token başına ödeme başlatma — dağıtık rate limit
+  if (!(await rateLimitDb(`payments-init:${portalToken}`, 10, 60_000))) {
     return NextResponse.json({ error: 'Çok fazla istek' }, { status: 429 })
   }
   if (!invoiceId || typeof invoiceId !== 'string') {

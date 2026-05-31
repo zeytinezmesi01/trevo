@@ -53,6 +53,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, alreadyProcessed: true })
   }
 
+  // Y-1: Eskimiş callback'leri reddet (replay koruması). iyzico checkout oturumu
+  // ~30 dk'da dolar; 1 saatten eski bir ödeme kaydına gelen callback gövdesi
+  // büyük olasılıkla yeniden oynatma (replay) girişimidir.
+  const PAYMENT_MAX_AGE_MS = 60 * 60 * 1000
+  if (
+    payment.created_at &&
+    Date.now() - new Date(payment.created_at as string).getTime() > PAYMENT_MAX_AGE_MS
+  ) {
+    return NextResponse.json({ error: 'Ödeme oturumu zaman aşımına uğradı' }, { status: 410 })
+  }
+
   // Yardımcı: sonuç sayfasına yönlendir
   const buildResultRedirect = async () => {
     const { data: c } = await admin

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { rateLimit } from '@/lib/rate-limit'
+import { rateLimitDb } from '@/lib/rate-limit'
 
 // POST /api/account/delete — hesabı + tüm verileri + auth kullanıcısını sil
 // Daha önce istemci tarafında yapılıyordu; auth.users SİLİNMİYORDU,
@@ -13,8 +13,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Oturum yok' }, { status: 401 })
   }
 
-  // O-1: hesap silme abuse'unu önlemek için rate limit
-  if (!rateLimit(`account-delete:${user.id}`, 3, 60_000)) {
+  // O-1 + K-2: hesap silme abuse'unu önlemek için dağıtık rate limit
+  if (!(await rateLimitDb(`account-delete:${user.id}`, 3, 60_000))) {
     return NextResponse.json({ error: 'Çok fazla istek' }, { status: 429 })
   }
 
