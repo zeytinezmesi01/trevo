@@ -34,8 +34,22 @@ export default function FaturaDetayPage() {
     setMsg('PDF hazırlanıyor...')
     try {
       const res = await fetch(`/api/invoices/${id}/pdf`)
-      if (res.redirected) window.open(res.url, '_blank')
-      else { const d = await res.json(); setMsg(d.error || 'Hata') }
+      // Route PDF'i binary (application/pdf) stream eder; redirect etmez.
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}))
+        setMsg(d.error || 'PDF oluşturulamadı')
+      } else {
+        const blob = await res.blob()
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `fatura-${String(it.invoice_number || id)}.pdf`
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+        setTimeout(() => URL.revokeObjectURL(url), 60_000)
+        setMsg('')
+      }
     } catch { setMsg('PDF hatası') }
     setDownloading(false)
     setTimeout(() => setMsg(''), 3000)
