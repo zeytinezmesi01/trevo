@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getPortalPayment } from '@/lib/portal/server'
 import { generatePortalBrand } from '@/lib/brand/server'
 import { DEFAULT_BRAND } from '@/lib/types/brand'
 import BrandStyle from '@/components/brand-style'
@@ -19,36 +20,17 @@ export default async function OdemeSonucPage({
 
   if (!paymentId) notFound()
 
-  // RLS bypass: portal token ile anon erişim — admin client kullan
-  const admin = createAdminClient()
-
-  // Client kontrolü
-  const { data: client } = await admin
-    .from('clients')
-    .select('*')
-    .eq('token', token)
-    .maybeSingle()
-
-  if (!client) notFound()
-
-  // Ödeme kaydı
-  const { data: payment } = await admin
-    .from('payments')
-    .select('*, invoices!inner(invoice_number, status, total)')
-    .eq('id', paymentId)
-    .maybeSingle()
-
+  // K-3: payment + client_id eşleşmesi token-scoped RPC içinde SQL'de doğrulanır
+  const payment = await getPortalPayment(token, paymentId)
   if (!payment) notFound()
 
-  // H-2: Ödemenin bu client'a ait olduğunu doğrula
-  if (payment.client_id !== client.id) notFound()
-
-  const invoice = payment.invoices as unknown as {
-    invoice_number: string
-    status: string
-    total: number
+  const invoice = {
+    invoice_number: payment.invoice_number,
+    status: payment.invoice_status,
+    total: payment.invoice_total,
   }
 
+  const admin = createAdminClient()
   const headersList = await headers()
   const host = headersList.get('host') || ''
   const brand = await generatePortalBrand(admin, host)

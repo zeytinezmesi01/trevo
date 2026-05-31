@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { GetObjectCommand } from '@aws-sdk/client-s3'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getPortalFile } from '@/lib/portal/server'
 import { getR2Client, getR2Bucket, R2_PUBLIC_URL } from '@/lib/r2/client'
 
 export const runtime = 'nodejs'
@@ -15,32 +16,13 @@ export async function GET(
   const { searchParams } = new URL(request.url)
   const portalToken = searchParams.get('token')
 
-  // Admin client ile dosyayı bul (tenant bağımsız sorgu)
-  const admin = createAdminClient()
-  const { data: file } = await admin
-    .from('files')
-    .select('*')
-    .eq('id', id)
-    .maybeSingle()
-
-  if (!file) {
-    return NextResponse.json({ error: 'Dosya bulunamadı' }, { status: 404 })
-  }
-
-  // Erişim kontrolü: ya dashboard kullanıcısı (aynı tenant) ya da portal token (dosyanın sahibi)
-  let authorized = false
+  // İzin verilen dosya: portal token (paylaşılmış + sahibi) ya da dashboard (aynı tenant)
+  let file: { name: string; url: string | null } | null = null
 
   if (portalToken) {
-    // Portal token ile erişim — client'in dosyası mı kontrol et
-    const { data: client } = await admin
-      .from('clients')
-      .select('id')
-      .eq('token', portalToken)
-      .maybeSingle()
-
-    if (client && file.client_id === client.id) {
-      authorized = true
-    }
+    // K-3: token-scoped RPC — yalnızca client'a ait ve paylaşılmış dosya döner
+    const pf = await getPortalFile(portalToken, id)
+    if (pf) file = { name: pf.name, url: pf.url }
   } else {
     // Dashboard kullanıcısı — aynı tenant üyesi mi kontrol et
     const supabase = await createClient()
@@ -51,13 +33,20 @@ export async function GET(
         .select('tenant_id')
         .eq('id', user.id)
         .maybeSingle()
-      if (profile?.tenant_id === file.tenant_id) {
-        authorized = true
+      if (profile?.tenant_id) {
+        const admin = createAdminClient()
+        const { data: f } = await admin
+          .from('files')
+          .select('name, url')
+          .eq('id', id)
+          .eq('tenant_id', profile.tenant_id)
+          .maybeSingle()
+        if (f) file = { name: f.name as string, url: f.url as string | null }
       }
     }
   }
 
-  if (!authorized) {
+  if (!file) {
     // Y-6: ID enumerasyonunu engellemek için 404 dön
     return NextResponse.json({ error: 'Dosya bulunamadı' }, { status: 404 })
   }

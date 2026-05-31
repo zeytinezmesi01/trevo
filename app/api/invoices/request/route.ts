@@ -1,5 +1,6 @@
 import { NextResponse, after } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getPortalClient } from '@/lib/portal/server'
 import { dispatchEvent } from '@/lib/webhooks/dispatch'
 import { WEBHOOK_EVENTS } from '@/lib/webhooks/events'
 import { rateLimitDb } from '@/lib/rate-limit'
@@ -39,16 +40,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Tutar çok yüksek' }, { status: 400 })
   }
 
-  // Find client by portal token
-  const { data: client } = await admin
-    .from('clients')
-    .select('id, name, company, email, tenant_id')
-    .eq('token', token)
-    .maybeSingle()
-
+  // K-3: token-scoped RPC — client SQL'de çözülür
+  const client = await getPortalClient(token)
   if (!client?.tenant_id) return NextResponse.json({ error: 'Müşteri bulunamadı' }, { status: 404 })
 
-  const tenantId = client.tenant_id as string
+  const tenantId = client.tenant_id
 
   // Tenant owner'ı bul (created_by için)
   const { data: tenant } = await admin

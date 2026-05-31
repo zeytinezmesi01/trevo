@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getPortalClient, getPortalPayableInvoice } from '@/lib/portal/server'
 import { getPaymentProvider } from '@/lib/payment'
 import { rateLimitDb } from '@/lib/rate-limit'
 
@@ -23,28 +24,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Geçersiz fatura kimliği' }, { status: 400 })
   }
 
-  // RLS bypass: portal token ile anon erişim — admin client kullan
-  const admin = createAdminClient()
-
-  // Portal token ile client'ı bul
-  const { data: client } = await admin
-    .from('clients')
-    .select('*')
-    .eq('token', portalToken)
-    .maybeSingle()
-
+  // K-3: token-scoped RPC'ler — client ve fatura sahipliği SQL'de doğrulanır
+  const client = await getPortalClient(portalToken)
   if (!client) {
     return NextResponse.json({ error: 'Geçersiz portal' }, { status: 404 })
   }
 
-  // Fatura client'a ait mi?
-  const { data: invoice } = await admin
-    .from('invoices')
-    .select('*')
-    .eq('id', invoiceId)
-    .eq('client_id', client.id)
-    .maybeSingle()
-
+  // Fatura yalnızca bu token'ın client'ına aitse döner
+  const invoice = await getPortalPayableInvoice(portalToken, invoiceId)
   if (!invoice) {
     return NextResponse.json({ error: 'Fatura bulunamadı' }, { status: 404 })
   }
@@ -53,6 +40,9 @@ export async function POST(request: Request) {
   if (invoice.status === 'paid') {
     return NextResponse.json({ error: 'Bu fatura zaten ödenmiş' }, { status: 400 })
   }
+
+  // Yazma işlemleri için admin client (değerler RPC'lerle doğrulandı)
+  const admin = createAdminClient()
 
   // Kalan tutar
   const remainingAmount = Number(invoice.total) - Number(invoice.amount_paid || 0)

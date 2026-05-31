@@ -1,6 +1,7 @@
 import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getPortalClient, listPortalFiles, listPortalInvoices } from '@/lib/portal/server'
 import { generatePortalBrand } from '@/lib/brand/server'
 import { DEFAULT_BRAND } from '@/lib/types/brand'
 import BrandStyle from '@/components/brand-style'
@@ -11,22 +12,17 @@ import PortalPaymentButton from '@/components/portal-payment-button'
 export default async function PortalPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
 
-  // RLS bypass: portal token ile anon erişim — admin client kullan
-  const admin = createAdminClient()
-
-  const { data: client } = await admin
-    .from('clients')
-    .select('*')
-    .eq('token', token)
-    .maybeSingle()
-
+  // K-3: Veri erişimi token-scoped RPC'lerden geçer (client_id scoping SQL'de sabit)
+  const client = await getPortalClient(token)
   if (!client) notFound()
 
-  const [{ data: files }, { data: invoices }] = await Promise.all([
-    admin.from('files').select('*').eq('client_id', client.id).eq('shared_with_client', true).order('created_at', { ascending: false }),
-    admin.from('invoices').select('id, invoice_number, invoice_date, status, total, amount_paid').eq('client_id', client.id).order('created_at', { ascending: false }),
+  const [files, invoices] = await Promise.all([
+    listPortalFiles(token),
+    listPortalInvoices(token),
   ])
 
+  // Brand çözümü tenant-scoped admin sorgusu gerektirir (sızıntı riski yok)
+  const admin = createAdminClient()
   const headersList = await headers()
   const host = headersList.get('host') || ''
   let brand = await generatePortalBrand(admin, host)
