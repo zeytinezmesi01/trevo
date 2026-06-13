@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
+import { cleanupAutoCreatedTenant } from '@/lib/tenant/server'
 
 export async function POST(request: Request) {
   // RLS bypass: kullanıcı henüz tenant üyesi değil bootstrap aşamasında
@@ -49,14 +50,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Bu takıma zaten üyesiniz' }, { status: 409 })
   }
 
-  // Y-11: Eski tenant'i temizlemeden önce kaydet
+  // Çoklu tenant: eski üyelikler KORUNUR; sadece kayıt trigger'ının boş
+  // oto-tenant'ı temizlenir (içinde veri/üye varsa dokunulmaz).
   const { data: oldProfile } = await admin
     .from('profiles')
-    .select('tenant_id')
+    .select('active_tenant_id')
     .eq('id', user.id)
     .maybeSingle()
 
-  const oldTenantId = oldProfile?.tenant_id
+  const oldTenantId = oldProfile?.active_tenant_id
 
   // Add to tenant_members
   await admin.from('tenant_members').insert({
@@ -67,29 +69,17 @@ export async function POST(request: Request) {
     joined_at: new Date().toISOString(),
   })
 
-  // Update profile
+  // Katıldığı tenant'ı aktif yap
   await admin.from('profiles').update({
-    tenant_id: invitation.tenant_id,
-    role: invitation.role,
+    active_tenant_id: invitation.tenant_id,
   }).eq('id', user.id)
 
   // Mark invitation accepted
   await admin.from('team_invitations').update({ status: 'accepted' }).eq('id', invitation.id)
 
-  // Y-11: Trigger'in auto-created bos tenant'ini temizle
+  // Y-11: Trigger'in auto-created BOŞ tenant'ini temizle (doluysa kalır)
   if (oldTenantId && oldTenantId !== invitation.tenant_id) {
-    await admin
-      .from('tenant_members')
-      .delete()
-      .eq('tenant_id', oldTenantId)
-      .eq('user_id', user.id)
-    const { count } = await admin
-      .from('tenant_members')
-      .select('id', { count: 'exact', head: true })
-      .eq('tenant_id', oldTenantId)
-    if (count === 0) {
-      await admin.from('tenants').delete().eq('id', oldTenantId)
-    }
+    await cleanupAutoCreatedTenant(user.id, oldTenantId)
   }
 
   return NextResponse.json({ ok: true, tenantId: invitation.tenant_id })

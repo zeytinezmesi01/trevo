@@ -39,15 +39,15 @@ export default function OnboardingModal() {
       // Bu oturum/kullanıcı için atlandıysa gösterme (hızlı yol: localStorage)
       if (typeof window !== 'undefined' && localStorage.getItem(`${SKIP_KEY}_${user.id}`)) return
 
-      // Profil bilgilerini al
+      // Profil bilgilerini al — rol kontrolü gerekmez: dashboard layout bu
+      // modalı yalnızca owner için render eder (rol artık tenant_members'ta)
       const { data: profile } = await supabase
         .from('profiles')
-        .select('company_name, company_tax_number, company_tax_office, brand_name, brand_primary_color, full_name, role, onboarding_dismissed_at')
+        .select('company_name, company_tax_number, company_tax_office, brand_name, brand_primary_color, full_name, onboarding_dismissed_at')
         .eq('id', user.id)
         .maybeSingle()
 
-      // Sadece owner'a goster, ekip uyelerine asla
-      if (!profile || profile.role !== 'owner') return
+      if (!profile) return
       if (profile.company_name && profile.company_name.trim()) return
 
       // DB'de kalıcı olarak kapatılmışsa gösterme

@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { getBrandByTenantId } from '@/lib/brand/server'
-import { DEFAULT_BRAND } from '@/lib/types/brand'
+import { getTenantContext } from '@/lib/tenant/auth'
+import { effectiveMenuVisibility } from '@/lib/tenant/menu'
 import DashboardSidebar from '@/components/dashboard-sidebar'
 import DashboardTopbar from '@/components/dashboard/topbar'
 import OnboardingModal from '@/components/onboarding-modal'
@@ -14,21 +15,21 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Kullanıcı'
   const userEmail = user?.email || ''
 
-  // Profil bilgileri
-  let userRole = 'member'
-  let userTenantId: string | null = null
-  if (user) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role, tenant_id')
-      .eq('id', user.id)
-      .maybeSingle()
-    if (profile?.role) userRole = profile.role
-    if (profile?.tenant_id) userTenantId = profile.tenant_id
-  }
+  // Aktif tenant + üyelikler (çoklu tenant) — rol tenant_members'tan gelir
+  const ctx = await getTenantContext()
+  const userRole = ctx.role
+  const userTenantId = ctx.tenantId
 
   // Brand'i tenant owner'indan al (ekip uyesi kendi profilinde brand tutmaz)
-  const brand = userTenantId ? await getBrandByTenantId(userTenantId) : DEFAULT_BRAND
+  const brand = await getBrandByTenantId(userTenantId)
+
+  // Rol bazlı menü görünürlüğü: owner her şeyi görür; diğer roller için
+  // role_permissions override'ları, yoksa koddaki minRole varsayılanı geçerli
+  const { data: permRows } = await supabase
+    .from('role_permissions')
+    .select('role, menu_key, enabled')
+    .eq('tenant_id', userTenantId)
+  const menuVisibility = effectiveMenuVisibility(userRole, permRows || [])
 
   return (
     <div
@@ -42,7 +43,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
       }}
     >
       <BrandStyle brand={brand} />
-      <DashboardSidebar brand={brand} userName={userName} userEmail={userEmail} userRole={userRole} />
+      <DashboardSidebar
+        brand={brand}
+        userName={userName}
+        userEmail={userEmail}
+        userRole={userRole}
+        menuVisibility={menuVisibility}
+      />
 
       <main
         style={{
@@ -54,7 +61,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
           overflow: 'hidden',
         }}
       >
-        <DashboardTopbar userName={userName} />
+        <DashboardTopbar
+          userName={userName}
+          memberships={ctx.memberships}
+          activeTenantId={ctx.tenantId}
+        />
         <div style={{ flex: 1, overflowY: 'auto', padding: '32px' }}>
           {children}
         </div>

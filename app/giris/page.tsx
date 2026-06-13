@@ -53,12 +53,18 @@ export default function GirisPage() {
       if (domainTenantId) {
         let authorized = false
         if (data?.user) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('tenant_id')
-            .eq('id', data.user.id)
-            .maybeSingle()
-          authorized = !!(profile?.tenant_id && profile.tenant_id === domainTenantId)
+          // Çoklu tenant: üyelik kontrolü + domain'in tenant'ını aktif yap.
+          // switch endpoint'i tenant_members üzerinden doğrular — üye değilse 403.
+          try {
+            const res = await fetch('/api/tenant/switch', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ tenantId: domainTenantId }),
+            })
+            authorized = res.ok
+          } catch {
+            authorized = false
+          }
         }
         if (!authorized) {
           if (data?.user) await supabase.auth.signOut()
@@ -80,10 +86,17 @@ export default function GirisPage() {
 
   const brandName = brand.brandName || 'Trevo'
 
+  // Nonce CSP: client component'te <style> etiketi nonce alamaz — marka
+  // değişkenleri wrapper'a style attribute olarak verilir (style-src-attr)
+  const brandVars = {
+    '--brand-primary': brand.brandPrimaryColor || '#111827',
+    '--brand-primary-foreground': '#fff',
+    '--brand-primary-hover': '#1f2937',
+  } as React.CSSProperties
+
   return (
     <>
-      <style>{`:root{--brand-primary:${brand.brandPrimaryColor || '#111827'};--brand-primary-foreground:#fff;--brand-primary-hover:#1f2937}`}</style>
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4" style={brandVars}>
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <Link href="/" className="text-2xl font-bold text-primary">{brandName}</Link>

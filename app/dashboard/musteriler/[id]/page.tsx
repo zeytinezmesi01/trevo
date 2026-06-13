@@ -21,10 +21,10 @@ export default function MusteriDetayPage() {
       const res = await fetch(`/api/tenant/members`).catch(() => null) // get tenant
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
-      const { data: p } = await supabase.from('profiles').select('tenant_id').eq('id', user.id).maybeSingle()
-      if (!p?.tenant_id) return
+      const { data: p } = await supabase.from('profiles').select('active_tenant_id').eq('id', user.id).maybeSingle()
+      if (!p?.active_tenant_id) return
 
-      const { data: c } = await supabase.from('clients').select('*').eq('id', id).eq('tenant_id', p.tenant_id).maybeSingle()
+      const { data: c } = await supabase.from('clients').select('*').eq('id', id).eq('tenant_id', p.active_tenant_id).maybeSingle()
       if (!c) { router.push('/dashboard/musteriler'); return }
       setClient(c)
       setForm({ name: c.name || '', company: c.company || '', email: c.email || '', tax_office: c.tax_office || '', tax_number: c.tax_number || '', address: c.address || '', city: c.city || '', phone: c.phone || '' })

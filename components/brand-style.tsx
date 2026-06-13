@@ -1,3 +1,4 @@
+import { headers } from 'next/headers'
 import { Brand, DEFAULT_PRIMARY_COLOR, DEFAULT_PRIMARY_FOREGROUND } from '@/lib/types/brand'
 
 function hexToHsl(hex: string): { h: number; s: number; l: number } {
@@ -54,14 +55,18 @@ function foregroundForBg(hex: string): string {
   return hsl.l > 55 ? '#111827' : '#ffffff'
 }
 
-export default function BrandStyle({ brand }: { brand: Brand }) {
+export default async function BrandStyle({ brand }: { brand: Brand }) {
   const primary = brand.brandPrimaryColor || DEFAULT_PRIMARY_COLOR
   const fg = foregroundForBg(primary)
   const hover = darken(primary, 10)
   const border = lighten(primary, 35)
 
+  // Nonce tabanlı CSP: inline <style> ancak nonce taşırsa çalışır.
+  // proxy.ts nonce'u x-nonce istek header'ına koyar (server component'ten okunur).
+  const nonce = (await headers()).get('x-nonce') || undefined
+
   return (
-    <style>{`
+    <style nonce={nonce}>{`
       :root {
         --brand-primary: ${primary};
         --brand-primary-foreground: ${fg};

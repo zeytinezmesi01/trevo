@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { clearBrandCache } from '@/lib/brand/server'
+import { ensureR2CorsOrigins } from '@/lib/r2/cors'
 import { promises as dns } from 'dns'
 
 // O-5: DNS sorgularını timeout ile sarmala
@@ -117,6 +118,14 @@ export async function POST() {
     }
   }
 
+  // 4) R2 CORS otomasyonu — custom domain'den tarayıcı yüklemeleri (presigned PUT)
+  // bucket CORS'unda origin'i ister. Domain aktifleşince otomatik ekle; idempotent,
+  // her kontrolde çalışması sorun değil. Hata domain doğrulamasını engellemez.
+  let r2Cors: { ok: boolean; added: string[]; error?: string } | null = null
+  if (status === 'active') {
+    r2Cors = await ensureR2CorsOrigins([`https://${domain}`, `https://www.${domain}`])
+  }
+
   // Profili güncelle
   const admin = createAdminClient()
   await admin
@@ -130,5 +139,5 @@ export async function POST() {
 
   clearBrandCache()
 
-  return NextResponse.json({ status, error, checkedAt: now, vercelConfigured })
+  return NextResponse.json({ status, error, checkedAt: now, vercelConfigured, r2Cors })
 }

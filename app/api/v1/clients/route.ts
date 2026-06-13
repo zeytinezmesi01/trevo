@@ -31,6 +31,7 @@ export async function GET(request: Request) {
       .from('clients')
       .select('id, name, company, email, phone, tax_office, tax_number, address, city, created_at')
       .eq('tenant_id', tenantId)
+      .eq('is_active', true)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1)
 

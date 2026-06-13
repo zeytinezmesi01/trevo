@@ -1,21 +1,17 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { getTenantContextApi } from '@/lib/tenant/auth'
 
-// GET /api/me — mevcut kullanıcının rolünü döndür
+// GET /api/me — mevcut kullanıcının aktif tenant'taki rolünü döndür
 export async function GET() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Oturum bulunamadı' }, { status: 401 })
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .maybeSingle()
-
-  return NextResponse.json({
-    id: user.id,
-    email: user.email,
-    role: (profile?.role as string) || 'member',
-  })
+  try {
+    const ctx = await getTenantContextApi()
+    return NextResponse.json({
+      id: ctx.userId,
+      role: ctx.role || 'member',
+      tenantId: ctx.tenantId,
+    })
+  } catch (e) {
+    const status = (e as Error & { status?: number }).status || 401
+    return NextResponse.json({ error: 'Oturum bulunamadı' }, { status })
+  }
 }

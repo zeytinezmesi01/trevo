@@ -73,13 +73,24 @@ export async function getBrandByTenantId(tenantId: string): Promise<Brand> {
   const cached = brandCache.get(`tenant:${tenantId}`)
   if (cached && cached.expiresAt > Date.now()) return cached.brand
 
+  // Brand, tenant sahibinin profilinde tutulur — owner'ı tenants.owner_id verir
+  // (çoklu tenant modelinde profiles.tenant_id/role yok)
   const admin = createAdminClient()
-  const { data } = await admin
-    .from('profiles')
-    .select('brand_name, brand_logo_url, brand_primary_color, brand_domain')
-    .eq('tenant_id', tenantId)
-    .eq('role', 'owner')
+  const { data: tenant } = await admin
+    .from('tenants')
+    .select('owner_id')
+    .eq('id', tenantId)
     .maybeSingle()
+
+  let data: Record<string, unknown> | null = null
+  if (tenant?.owner_id) {
+    const { data: ownerProfile } = await admin
+      .from('profiles')
+      .select('brand_name, brand_logo_url, brand_primary_color, brand_domain')
+      .eq('id', tenant.owner_id)
+      .maybeSingle()
+    data = ownerProfile
+  }
 
   const brand = buildBrandFromProfile(data)
   brandCache.set(`tenant:${tenantId}`, { brand, expiresAt: Date.now() + CACHE_TTL })

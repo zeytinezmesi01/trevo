@@ -101,14 +101,15 @@ export async function PATCH(request: Request) {
   // Brand alanlari guncellendiyse cache'i temizle
   const brandFields = ['brand_name', 'brand_logo_url', 'brand_primary_color']
   if (Object.keys(update).some((k) => (brandFields as string[]).includes(k))) {
-    // tenant_id'yi alip cache'i dogru sekilde temizle (Y8 fix)
-    const { data: p } = await supabase
-      .from('profiles')
-      .select('tenant_id')
-      .eq('id', user.id)
+    // Brand tenant sahibinin profilinde tutulur — sahibi olunan tenant'ın
+    // cache'ini temizle (Y8 fix; çoklu tenant modelinde tenant_id yok)
+    const { data: owned } = await supabase
+      .from('tenants')
+      .select('id')
+      .eq('owner_id', user.id)
       .maybeSingle()
-    if (p?.tenant_id) {
-      clearBrandCache(p.tenant_id)
+    if (owned?.id) {
+      clearBrandCache(owned.id)
     } else {
       clearBrandCache()
     }

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import crypto from 'node:crypto'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
+import { cleanupAutoCreatedTenant } from '@/lib/tenant/server'
 import { rateLimit } from '@/lib/rate-limit'
 
 export async function POST(request: Request) {
@@ -82,39 +83,23 @@ export async function POST(request: Request) {
       })
   }
 
-  // Profili KEY'in tenant'ina tasi (trigger'in auto-created tenant'ini ezer)
+  // Çoklu tenant: eski üyelikler korunur; KEY'in tenant'ı aktif yapılır
   const { data: profile } = await admin
     .from('profiles')
-    .select('tenant_id')
+    .select('active_tenant_id')
     .eq('id', user.id)
     .maybeSingle()
 
-  const oldTenantId = profile?.tenant_id
+  const oldTenantId = profile?.active_tenant_id
 
   await admin
     .from('profiles')
-    .update({ tenant_id: keyData.tenant_id, role: keyData.role })
+    .update({ active_tenant_id: keyData.tenant_id })
     .eq('id', user.id)
 
-  // Trigger'in auto-created bos tenant'ini temizle
+  // Trigger'in auto-created BOŞ tenant'ini temizle (doluysa kalır)
   if (oldTenantId && oldTenantId !== keyData.tenant_id) {
-    // tenant_members'dan kendini cikar
-    await admin
-      .from('tenant_members')
-      .delete()
-      .eq('tenant_id', oldTenantId)
-      .eq('user_id', user.id)
-    // Eger tenant bossa sil
-    const { count } = await admin
-      .from('tenant_members')
-      .select('id', { count: 'exact', head: true })
-      .eq('tenant_id', oldTenantId)
-    if (count === 0) {
-      await admin
-        .from('tenants')
-        .delete()
-        .eq('id', oldTenantId)
-    }
+    await cleanupAutoCreatedTenant(user.id, oldTenantId)
   }
 
   return NextResponse.json({ ok: true, role: keyData.role })

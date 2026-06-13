@@ -149,10 +149,17 @@ function KayitForm() {
 
   const brandName = brand.brandName || 'Trevo'
 
+  // Nonce CSP: client component'te <style> etiketi nonce alamaz — marka
+  // değişkenleri wrapper'a style attribute olarak verilir (style-src-attr)
+  const brandVars = {
+    '--brand-primary': brand.brandPrimaryColor || '#111827',
+    '--brand-primary-foreground': '#fff',
+    '--brand-primary-hover': '#1f2937',
+  } as React.CSSProperties
+
   return (
     <>
-      <style>{`:root{--brand-primary:${brand.brandPrimaryColor || '#111827'};--brand-primary-foreground:#fff;--brand-primary-hover:#1f2937}`}</style>
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4" style={brandVars}>
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <Link href="/" className="text-2xl font-bold text-primary">{brandName}</Link>

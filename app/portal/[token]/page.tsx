@@ -29,13 +29,21 @@ export default async function PortalPage({ params }: { params: Promise<{ token: 
 
   // localhost/trevo-delta.vercel.app gibi varsayılan domain'lerde tenant brand'ini bul
   if (brand.brandName === DEFAULT_BRAND.brandName && client.tenant_id) {
-    const { data: tenantProfile } = await admin
-      .from('profiles')
-      .select('brand_name, brand_logo_url, brand_primary_color, brand_domain')
-      .eq('tenant_id', client.tenant_id)
-      .eq('role', 'owner')
-      .not('brand_name', 'is', null)
+    // Brand tenant sahibinin profilinde — owner'ı tenants.owner_id verir
+    const { data: tenantRow } = await admin
+      .from('tenants')
+      .select('owner_id')
+      .eq('id', client.tenant_id)
       .maybeSingle()
+
+    const { data: tenantProfile } = tenantRow?.owner_id
+      ? await admin
+          .from('profiles')
+          .select('brand_name, brand_logo_url, brand_primary_color, brand_domain')
+          .eq('id', tenantRow.owner_id)
+          .not('brand_name', 'is', null)
+          .maybeSingle()
+      : { data: null }
 
     if (tenantProfile) {
       brand = {

@@ -11,7 +11,7 @@ export default function PortalPaymentButton({
 }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [formContent, setFormContent] = useState<string | null>(null)
+  const [frameSrc, setFrameSrc] = useState<string | null>(null)
 
   const handlePay = async () => {
     setLoading(true)
@@ -23,8 +23,12 @@ export default function PortalPaymentButton({
         body: JSON.stringify({ portalToken, invoiceId }),
       })
       const data = await res.json()
-      if (data.checkoutFormContent) {
-        setFormContent(data.checkoutFormContent)
+      if (res.ok && data.paymentId) {
+        // Form, kendi gevşek CSP'sine sahip ayrı dokümandan yüklenir —
+        // srcdoc üst sayfanın nonce CSP'sini miras aldığı için kullanılamaz
+        setFrameSrc(
+          `/api/payments/checkout-frame?paymentId=${encodeURIComponent(data.paymentId)}&token=${encodeURIComponent(portalToken)}`
+        )
       } else {
         setError(data.error || 'Ödeme başlatılamadı')
       }
@@ -35,7 +39,7 @@ export default function PortalPaymentButton({
   }
 
   const handleClose = () => {
-    setFormContent(null)
+    setFrameSrc(null)
     setError('')
   }
 
@@ -59,7 +63,7 @@ export default function PortalPaymentButton({
       </button>
 
       {/* Modal */}
-      {(formContent || error) && (
+      {(frameSrc || error) && (
         <div
           style={{
             position: 'fixed', inset: 0, zIndex: 9999,
@@ -94,9 +98,9 @@ export default function PortalPaymentButton({
                 <div style={{ fontSize: 40, marginBottom: 12 }}>❌</div>
                 <p style={{ color: '#ef4444', fontSize: 14 }}>{error}</p>
               </div>
-            ) : formContent ? (
+            ) : frameSrc ? (
               <iframe
-                srcDoc={formContent}
+                src={frameSrc}
                 sandbox="allow-scripts allow-forms allow-top-navigation-by-user-activation"
                 style={{ border: 'none', width: '100%', minHeight: 480 }}
                 title="Ödeme Formu"

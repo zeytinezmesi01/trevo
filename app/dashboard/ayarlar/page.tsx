@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import BrandSettingsForm from '@/components/brand-settings-form'
+import RolePermissionsMatrix from '@/components/role-permissions-matrix'
 
 export default function AyarlarPage() {
   const [form, setForm] = useState({
@@ -32,9 +33,10 @@ export default function AyarlarPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
       setEmail(user.email || '')
+      // Rol artık tenant_members'tan gelir (çoklu tenant)
+      fetch('/api/me').then(r => r.json()).then(d => setUserRole(d.role || '')).catch(() => {})
       const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
       if (data) {
-        setUserRole(data.role || '')
         setForm({
           full_name: data.full_name || '',
           company_name: data.company_name || '',
@@ -47,9 +49,9 @@ export default function AyarlarPage() {
         })
       }
       // e-Fatura durumu
-      const { data: p } = await supabase.from('profiles').select('tenant_id').eq('id', user.id).single()
-      if (p?.tenant_id) {
-        const { data: t } = await supabase.from('tenants').select('einvoice_enabled').eq('id', p.tenant_id).single()
+      const { data: p } = await supabase.from('profiles').select('active_tenant_id').eq('id', user.id).single()
+      if (p?.active_tenant_id) {
+        const { data: t } = await supabase.from('tenants').select('einvoice_enabled').eq('id', p.active_tenant_id).single()
         if (t?.einvoice_enabled) setEinvoiceEnabled(true)
       }
       setLoading(false)
@@ -254,6 +256,9 @@ export default function AyarlarPage() {
           <BrandSettingsForm />
         </div>
         )}
+
+        {/* ROL YETKİLERİ — sadece owner */}
+        {userRole === 'owner' && <RolePermissionsMatrix />}
 
         {/* E-FATURA — sadece owner */}
         {userRole === 'owner' && (

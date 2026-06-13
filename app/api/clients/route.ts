@@ -17,6 +17,7 @@ export async function GET(request: Request) {
     .from('clients')
     .select('*')
     .eq('tenant_id', ctx.tenantId)
+    .eq('is_active', true)
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1)
   return NextResponse.json(data || [])

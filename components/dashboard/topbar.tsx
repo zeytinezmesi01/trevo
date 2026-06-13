@@ -1,10 +1,44 @@
 'use client'
 
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-export default function DashboardTopbar({ userName }: { userName: string }) {
+type Membership = { tenantId: string; tenantName: string; role: string }
+
+export default function DashboardTopbar({
+  userName,
+  memberships = [],
+  activeTenantId,
+}: {
+  userName: string
+  memberships?: Membership[]
+  activeTenantId?: string
+}) {
   const initials = userName.slice(0, 2).toUpperCase() || 'HB'
   const router = useRouter()
+  const [switching, setSwitching] = useState(false)
+
+  const handleTenantSwitch = async (tenantId: string) => {
+    if (!tenantId || tenantId === activeTenantId || switching) return
+    setSwitching(true)
+    try {
+      const res = await fetch('/api/tenant/switch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenantId }),
+      })
+      if (res.ok) {
+        // Tüm sayfa verileri tenant'a bağlı — temiz başlangıç için tam yenile
+        window.location.href = '/dashboard'
+        return
+      }
+      const data = await res.json().catch(() => ({}))
+      alert(data.error || 'İşletme değiştirilemedi.')
+    } catch {
+      alert('Bağlantı hatası — işletme değiştirilemedi.')
+    }
+    setSwitching(false)
+  }
 
   return (
     <header
@@ -68,6 +102,35 @@ export default function DashboardTopbar({ userName }: { userName: string }) {
 
       {/* Actions */}
       <div className="flex items-center gap-2.5">
+        {/* Tenant switcher — birden fazla üyelik varsa */}
+        {memberships.length > 1 && (
+          <select
+            aria-label="İşletme seç"
+            value={activeTenantId}
+            disabled={switching}
+            onChange={(e) => handleTenantSwitch(e.target.value)}
+            style={{
+              height: '36px',
+              maxWidth: '200px',
+              padding: '0 10px',
+              borderRadius: '10px',
+              border: '1px solid #e8edf8',
+              background: '#ffffff',
+              color: '#0f172a',
+              fontSize: '13px',
+              fontWeight: 500,
+              cursor: switching ? 'wait' : 'pointer',
+              outline: 'none',
+            }}
+          >
+            {memberships.map((m) => (
+              <option key={m.tenantId} value={m.tenantId}>
+                {m.tenantName}
+              </option>
+            ))}
+          </select>
+        )}
+
         {/* Notification */}
         <button
           aria-label="Bildirimler"

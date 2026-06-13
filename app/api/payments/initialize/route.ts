@@ -123,15 +123,16 @@ export async function POST(request: Request) {
       callbackUrl,
     })
 
-    // Token'ı payments satırına yaz
+    // Token'ı ve form içeriğini payments satırına yaz. Form içeriği
+    // /api/payments/checkout-frame'den kendi CSP'siyle servis edilir —
+    // nonce tabanlı katı CSP altında srcdoc iframe çalışmaz (CSP miras alır).
     await admin
       .from('payments')
-      .update({ payment_token: result.token })
+      .update({ payment_token: result.token, checkout_form_content: result.checkoutFormContent })
       .eq('id', payment.id)
 
     return NextResponse.json({
       token: result.token,
-      checkoutFormContent: result.checkoutFormContent,
       paymentPageUrl: result.paymentPageUrl,
       paymentId: payment.id,
     })

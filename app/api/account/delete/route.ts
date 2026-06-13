@@ -26,32 +26,35 @@ export async function POST(request: Request) {
 
   const admin = createAdminClient()
 
-  // 1. Kullanıcının tenant'ını bul
-  const { data: profile } = await admin
-    .from('profiles')
-    .select('tenant_id')
-    .eq('id', user.id)
+  // 1. Kullanıcının SAHİBİ olduğu tenant'ı bul (üyelikler tenant_members'ta;
+  //    başka tenantlardaki üyelikler sadece silinir, o tenantlara dokunulmaz)
+  const { data: ownedTenant } = await admin
+    .from('tenants')
+    .select('id')
+    .eq('owner_id', user.id)
     .maybeSingle()
 
-  if (profile?.tenant_id) {
+  if (ownedTenant?.id) {
     // Ekip üyesi varsa: başka kişilerin verisini silmemek için engelle
     const { count: memberCount } = await admin
       .from('tenant_members')
       .select('*', { count: 'exact', head: true })
-      .eq('tenant_id', profile.tenant_id)
+      .eq('tenant_id', ownedTenant.id)
 
     if ((memberCount || 0) > 1) {
       return NextResponse.json({
         error: 'Ekibinizde başka üyeler var. Hesabınızı silmeden önce ekip üyelerini kaldırın.',
       }, { status: 400 })
     }
+  }
 
-    // FK güvenliği için profile.tenant_id'yi nullify et (NO ACTION FK olabilir)
-    await admin.from('profiles').update({ tenant_id: null, role: null }).eq('id', user.id)
-    // Kendi tenant_members kaydını sil (savunma amaçlı)
-    await admin.from('tenant_members').delete().eq('user_id', user.id)
+  // FK güvenliği: aktif tenant referansını sıfırla, tüm üyelikleri kaldır
+  await admin.from('profiles').update({ active_tenant_id: null }).eq('id', user.id)
+  await admin.from('tenant_members').delete().eq('user_id', user.id)
+
+  if (ownedTenant?.id) {
     // Tenant'ı sil — FK cascade ile clients/invoices/files/payments/webhook* siliner
-    await admin.from('tenants').delete().eq('id', profile.tenant_id)
+    await admin.from('tenants').delete().eq('id', ownedTenant.id)
   }
 
   // 2. Profili sil

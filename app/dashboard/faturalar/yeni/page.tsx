@@ -20,9 +20,9 @@ export default function YeniFaturaPage() {
     const load = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
-      const { data: p } = await supabase.from('profiles').select('tenant_id').eq('id', user.id).maybeSingle()
-      if (!p?.tenant_id) return
-      const { data } = await supabase.from('clients').select('id, name, company, email, tax_office, tax_number, address, city').eq('tenant_id', p.tenant_id).order('name')
+      const { data: p } = await supabase.from('profiles').select('active_tenant_id').eq('id', user.id).maybeSingle()
+      if (!p?.active_tenant_id) return
+      const { data } = await supabase.from('clients').select('id, name, company, email, tax_office, tax_number, address, city').eq('tenant_id', p.active_tenant_id).eq('is_active', true).order('name')
       setClients(data || [])
     }
     load()

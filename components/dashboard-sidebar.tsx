@@ -85,14 +85,14 @@ const BarChartIcon = () => (
 )
 
 const navItems = [
-  { href: '/dashboard', icon: <HomeIcon />, label: 'Genel Bakış', exact: true, minRole: 'viewer' },
-  { href: '/dashboard/raporlar', icon: <BarChartIcon />, label: 'Raporlar', minRole: 'admin' },
-  { href: '/dashboard/dosyalar', icon: <FolderIcon />, label: 'Dosyalar', minRole: 'viewer' },
-  { href: '/dashboard/faturalar', icon: <InvoiceIcon />, label: 'Faturalar', minRole: 'admin' },
-  { href: '/dashboard/hizmetler', icon: <BriefcaseIcon />, label: 'Hizmetler', minRole: 'admin' },
-  { href: '/dashboard/ekip', icon: <UsersIcon />, label: 'Ekip', minRole: 'admin' },
-  { href: '/dashboard/musteriler', icon: <HeartIcon />, label: 'Müşteriler', minRole: 'member' },
-  { href: '/dashboard/odeme', icon: <CardIcon />, label: 'Ödeme', minRole: 'owner' },
+  { key: 'genel', href: '/dashboard', icon: <HomeIcon />, label: 'Genel Bakış', exact: true, minRole: 'viewer' },
+  { key: 'raporlar', href: '/dashboard/raporlar', icon: <BarChartIcon />, label: 'Raporlar', minRole: 'admin' },
+  { key: 'dosyalar', href: '/dashboard/dosyalar', icon: <FolderIcon />, label: 'Dosyalar', minRole: 'viewer' },
+  { key: 'faturalar', href: '/dashboard/faturalar', icon: <InvoiceIcon />, label: 'Faturalar', minRole: 'admin' },
+  { key: 'hizmetler', href: '/dashboard/hizmetler', icon: <BriefcaseIcon />, label: 'Hizmetler', minRole: 'admin' },
+  { key: 'ekip', href: '/dashboard/ekip', icon: <UsersIcon />, label: 'Ekip', minRole: 'admin' },
+  { key: 'musteriler', href: '/dashboard/musteriler', icon: <HeartIcon />, label: 'Müşteriler', minRole: 'member' },
+  { key: 'odeme', href: '/dashboard/odeme', icon: <CardIcon />, label: 'Ödeme', minRole: 'owner' },
 ]
 
 const ROLE_LEVEL: Record<string, number> = { owner: 4, admin: 3, member: 2, viewer: 1 }
@@ -106,11 +106,14 @@ export default function DashboardSidebar({
   userName,
   userEmail,
   userRole,
+  menuVisibility,
 }: {
   brand: Brand
   userName: string
   userEmail: string
   userRole: string
+  /** Rol yetki matrix'inden hesaplanan görünürlük; yoksa minRole varsayılanı */
+  menuVisibility?: Record<string, boolean>
 }) {
   const pathname = usePathname()
   const router = useRouter()
@@ -128,6 +131,10 @@ export default function DashboardSidebar({
   }
 
   const initials = userName.slice(0, 2).toUpperCase() || 'HB'
+
+  // Matrix görünürlüğü öncelikli; prop gelmezse minRole varsayılanına düş
+  const canSee = (key: string, minRole: string) =>
+    menuVisibility ? !!menuVisibility[key] : hasMinRole(userRole, minRole)
 
   return (
     <aside
@@ -191,7 +198,7 @@ export default function DashboardSidebar({
         </div>
 
         {navItems.map((item) => {
-          if (!hasMinRole(userRole, item.minRole)) return null
+          if (!canSee(item.key, item.minRole)) return null
           const active = isActive(item.href, item.exact)
           return (
             <Link
@@ -241,7 +248,7 @@ export default function DashboardSidebar({
         </div>
 
         {/* Ayarlar */}
-        {hasMinRole(userRole, 'viewer') && (() => {
+        {canSee('ayarlar', 'viewer') && (() => {
           const active = isActive('/dashboard/ayarlar') && !pathname.startsWith('/dashboard/ayarlar/api')
           return (
             <Link
@@ -274,7 +281,7 @@ export default function DashboardSidebar({
         })()}
 
         {/* API & Webhook */}
-        {hasMinRole(userRole, 'admin') && (() => {
+        {canSee('api', 'admin') && (() => {
           const active = pathname.startsWith('/dashboard/ayarlar/api')
           return (
             <Link

@@ -71,11 +71,21 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   if (!canManageClients(ctx.role)) return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
   const { error } = await supabase.from('clients').delete().eq('id', id).eq('tenant_id', ctx.tenantId)
   if (error) {
-    console.error('DELETE clients error:', error)
-    // FK kısıtı — müşteriye bağlı fatura/dosya var
+    // FK kısıtı — müşteriye bağlı fatura/dosya var. Faturalar muhasebe kaydıdır,
+    // silinemez; müşteriyi pasife al (listeden kalkar, geçmiş korunur).
     if (error.message?.includes('foreign key') || error.code === '23503') {
-      return NextResponse.json({ error: 'Bu müşteriye bağlı faturalar/dosyalar bulunuyor. Önce onları temizleyin.' }, { status: 409 })
+      const { error: deactivateError } = await supabase
+        .from('clients')
+        .update({ is_active: false })
+        .eq('id', id)
+        .eq('tenant_id', ctx.tenantId)
+      if (deactivateError) {
+        console.error('DELETE clients deactivate error:', deactivateError)
+        return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
+      }
+      return NextResponse.json({ ok: true, deactivated: true })
     }
+    console.error('DELETE clients error:', error)
     return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
   }
   return NextResponse.json({ ok: true })

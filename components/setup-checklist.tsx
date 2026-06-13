@@ -35,17 +35,17 @@ export default function SetupChecklist() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('company_name, company_tax_number, company_tax_office, brand_name, brand_primary_color, tenant_id')
+        .select('company_name, company_tax_number, company_tax_office, brand_name, brand_primary_color, active_tenant_id')
         .eq('id', user.id)
         .maybeSingle()
 
       let einvoiceEnabled = false
       let hasIyzico = false
-      if (profile?.tenant_id) {
+      if (profile?.active_tenant_id) {
         const { data: t } = await supabase
           .from('tenants')
           .select('einvoice_enabled, iyzico_api_key')
-          .eq('id', profile.tenant_id)
+          .eq('id', profile.active_tenant_id)
           .maybeSingle()
         einvoiceEnabled = !!t?.einvoice_enabled
         hasIyzico = !!t?.iyzico_api_key

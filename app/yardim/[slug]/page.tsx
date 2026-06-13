@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getArticle, getArticles } from '@/lib/yardim/content'
@@ -51,6 +52,8 @@ export default async function YardimMakalePage({
   if (!article) notFound()
 
   const contentHtml = renderMarkdown(article.content)
+  // Nonce CSP: inline <style> ancak nonce taşırsa çalışır (proxy.ts üretir)
+  const nonce = (await headers()).get('x-nonce') || undefined
 
   return (
     <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
@@ -80,7 +83,7 @@ export default async function YardimMakalePage({
         </p>
 
         <div style={{ borderTop: '1px solid #e8edf8', paddingTop: 32 }}>
-          <style dangerouslySetInnerHTML={{ __html: contentStyles }} />
+          <style nonce={nonce} dangerouslySetInnerHTML={{ __html: contentStyles }} />
           <div
             className="yardim-content"
             style={{ lineHeight: 1.8, fontSize: '15px', color: '#334155' }}

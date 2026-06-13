@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
+import { cleanupAutoCreatedTenant } from '@/lib/tenant/server'
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -23,26 +24,27 @@ export async function POST(request: Request) {
   // Domain sahibini bul (yalnızca aktif/doğrulanmış domain'ler).
   const { data: ownerProfile } = await admin
     .from('profiles')
-    .select('tenant_id, brand_domain_status')
+    .select('id, brand_domain_status')
     .eq('brand_domain', domain)
-    .eq('role', 'owner')
     .maybeSingle()
 
   if (!ownerProfile || ownerProfile.brand_domain_status !== 'active') {
     return NextResponse.json({ error: 'Doğrulanmış bir işletme domaini bulunamadı' }, { status: 404 })
   }
 
-  const tenantId = ownerProfile.tenant_id as string
-
+  // Domain'in tenant'ı: domain sahibinin SAHİBİ olduğu tenant
+  // (tenants.owner_id UNIQUE — profiles.tenant_id artık yok)
   const { data: tenant } = await admin
     .from('tenants')
     .select('id, name')
-    .eq('id', tenantId)
-    .single()
+    .eq('owner_id', ownerProfile.id)
+    .maybeSingle()
 
   if (!tenant) {
     return NextResponse.json({ error: 'Bu domain\'e ait isletme bulunamadi' }, { status: 404 })
   }
+
+  const tenantId = tenant.id as string
 
   // Kullanici zaten bu tenant'ta mi?
   const { data: existingMember } = await admin
@@ -74,37 +76,23 @@ export async function POST(request: Request) {
       })
   }
 
-  // Profili KEY'in tenant'ina tasi (trigger'in auto-created tenant'ini ezer)
+  // Çoklu tenant: eski üyelikler korunur; katıldığı tenant aktif yapılır
   const { data: profile } = await admin
     .from('profiles')
-    .select('tenant_id')
+    .select('active_tenant_id')
     .eq('id', user.id)
     .maybeSingle()
 
-  const oldTenantId = profile?.tenant_id
+  const oldTenantId = profile?.active_tenant_id
 
   await admin
     .from('profiles')
-    .update({ tenant_id: tenantId, role: 'member' })
+    .update({ active_tenant_id: tenantId })
     .eq('id', user.id)
 
-  // Trigger'in auto-created bos tenant'ini temizle
+  // Trigger'in auto-created BOŞ tenant'ini temizle (doluysa kalır)
   if (oldTenantId && oldTenantId !== tenantId) {
-    await admin
-      .from('tenant_members')
-      .delete()
-      .eq('tenant_id', oldTenantId)
-      .eq('user_id', user.id)
-    const { count } = await admin
-      .from('tenant_members')
-      .select('id', { count: 'exact', head: true })
-      .eq('tenant_id', oldTenantId)
-    if (count === 0) {
-      await admin
-        .from('tenants')
-        .delete()
-        .eq('id', oldTenantId)
-    }
+    await cleanupAutoCreatedTenant(user.id, oldTenantId)
   }
 
   return NextResponse.json({ status: 'joined', tenantId, tenantName: tenant.name })

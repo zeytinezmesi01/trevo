@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { GetObjectCommand } from '@aws-sdk/client-s3'
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getTenantContextApi } from '@/lib/tenant/auth'
 import { getPortalFile } from '@/lib/portal/server'
 import { getR2Client, getR2Bucket, R2_PUBLIC_URL } from '@/lib/r2/client'
 
@@ -24,25 +24,19 @@ export async function GET(
     const pf = await getPortalFile(portalToken, id)
     if (pf) file = { name: pf.name, url: pf.url }
   } else {
-    // Dashboard kullanıcısı — aynı tenant üyesi mi kontrol et
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (user) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('tenant_id')
-        .eq('id', user.id)
+    // Dashboard kullanıcısı — aktif tenant üyeliği doğrulanır (çoklu tenant)
+    try {
+      const ctx = await getTenantContextApi()
+      const admin = createAdminClient()
+      const { data: f } = await admin
+        .from('files')
+        .select('name, url')
+        .eq('id', id)
+        .eq('tenant_id', ctx.tenantId)
         .maybeSingle()
-      if (profile?.tenant_id) {
-        const admin = createAdminClient()
-        const { data: f } = await admin
-          .from('files')
-          .select('name, url')
-          .eq('id', id)
-          .eq('tenant_id', profile.tenant_id)
-          .maybeSingle()
-        if (f) file = { name: f.name as string, url: f.url as string | null }
-      }
+      if (f) file = { name: f.name as string, url: f.url as string | null }
+    } catch {
+      // oturum yok — file null kalır, aşağıda 404 döner
     }
   }
 

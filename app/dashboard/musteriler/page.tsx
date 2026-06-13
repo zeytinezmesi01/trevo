@@ -70,6 +70,10 @@ export default function MusterilerPage() {
         alert(data.error || 'Müşteri silinemedi.')
         return
       }
+      const data = await res.json().catch(() => ({}))
+      if (data.deactivated) {
+        alert('Bu müşteriye bağlı faturalar olduğu için müşteri pasife alındı. Faturaları ve geçmişi korunuyor; listede artık görünmeyecek.')
+      }
     } catch {
       alert('Bağlantı hatası — müşteri silinemedi.')
       return
