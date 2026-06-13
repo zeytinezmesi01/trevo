@@ -2,10 +2,26 @@ import { NextResponse, after } from 'next/server'
 import { getTenantContext } from '@/lib/tenant/auth'
 import { canManageTenant } from '@/lib/tenant/permissions'
 import { createClient } from '@/lib/supabase/server'
-import { getEInvoiceProvider, generateDocumentNumber, determineDocumentType } from '@/lib/einvoice'
+import { getEInvoiceProviderForTenant, generateDocumentNumber, determineDocumentType } from '@/lib/einvoice'
+import type { EInvoiceProvider } from '@/lib/einvoice/provider'
 import { buildEInvoicePayload } from '@/lib/einvoice/payload'
+import { decryptSecret } from '@/lib/crypto'
 import { dispatchEvent } from '@/lib/webhooks/dispatch'
 import { WEBHOOK_EVENTS } from '@/lib/webhooks/events'
+
+/** Tenant'ın BYOK Nilvera anahtarından sağlayıcı kurar; anahtar yoksa mock. */
+async function buildTenantProvider(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  tenantId: string,
+): Promise<EInvoiceProvider> {
+  const { data: cfg } = await supabase
+    .from('tenants')
+    .select('nilvera_api_key, nilvera_test_mode')
+    .eq('id', tenantId)
+    .maybeSingle()
+  const apiKey = cfg?.nilvera_api_key ? decryptSecret(cfg.nilvera_api_key) : ''
+  return getEInvoiceProviderForTenant(apiKey, cfg?.nilvera_test_mode ?? true)
+}
 
 async function getNextDocumentSequence(supabase: Awaited<ReturnType<typeof createClient>>, tenantId: string): Promise<number> {
   const { data, error } = await supabase
@@ -45,6 +61,7 @@ async function ensureTenantProvisioned(
   supabase: Awaited<ReturnType<typeof createClient>>,
   tenantId: string,
   profile: Record<string, unknown> | null,
+  provider: EInvoiceProvider,
 ): Promise<string> {
   const { data: tenant } = await supabase
     .from('tenants')
@@ -56,7 +73,7 @@ async function ensureTenantProvisioned(
     return tenant.einvoice_account_id
   }
 
-  const provider = getEInvoiceProvider()
+  // BYOK'ta provider.provisionTenant no-op'tur (tenant kendi Nilvera firması)
   const result = await provider.provisionTenant({
     taxNumber: (profile?.company_tax_number as string) || '',
     taxOffice: (profile?.company_tax_office as string) || '',
@@ -149,9 +166,9 @@ export async function POST(
     return NextResponse.json({ error: 'Müşteri bulunamadı' }, { status: 404 })
   }
 
-  // 5. Belge tipini belirle (e-Fatura / e-Arşiv)
-  const provider = getEInvoiceProvider()
-  const { type: documentType, isEInvoiceUser } = await determineDocumentType(provider, client.tax_number)
+  // 5. Belge tipini belirle (e-Fatura / e-Arşiv) — BYOK: tenant'ın kendi anahtarı
+  const provider = await buildTenantProvider(supabase, ctx.tenantId)
+  const { type: documentType, isEInvoiceUser, alias: buyerAlias } = await determineDocumentType(provider, client.tax_number)
 
   // Mükellef bilgisini cache'le
   await supabase
@@ -160,7 +177,7 @@ export async function POST(
     .eq('id', client.id)
 
   // 6. Tenant provision (tenant sahibi profili ile)
-  await ensureTenantProvisioned(supabase, ctx.tenantId, profile)
+  await ensureTenantProvisioned(supabase, ctx.tenantId, profile, provider)
 
   // 7. Belge numarası üret
   const seq = await getNextDocumentSequence(supabase, ctx.tenantId)
@@ -201,6 +218,7 @@ export async function POST(
       city: client.city,
     },
     documentType,
+    buyerAlias,
   })
 
   // 9. Gönder

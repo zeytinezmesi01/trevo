@@ -50,6 +50,8 @@ export function buildEInvoicePayload(params: {
     city?: string | null
   }
   documentType: EInvoiceDocumentType
+  /** Alıcının GİB etiketi (mükellef sorgusundan) — e-Fatura CustomerAlias */
+  buyerAlias?: string
 }): EInvoicePayload {
   // D-19: Zorunlu satici alanlari icin erken hata
   if (!params.seller.company_tax_number) {
@@ -87,6 +89,7 @@ export function buildEInvoicePayload(params: {
       city: params.client.city || undefined,
       country: 'Türkiye',
     },
+    buyerAlias: params.buyerAlias || undefined,
 
     invoiceNumber: params.invoice.invoice_number,
     invoiceDate: params.invoice.invoice_date,

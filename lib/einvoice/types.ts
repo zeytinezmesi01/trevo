@@ -48,6 +48,9 @@ export type EInvoicePayload = {
   buyerTaxNumber?: string
   buyerName: string
   buyerAddress?: EInvoiceAddress
+  /** Alıcının GİB e-fatura etiketi (mükellef sorgusundan gelir) — e-Fatura'da
+   *  CustomerAlias olarak gönderilir; e-Arşiv'de kullanılmaz */
+  buyerAlias?: string
 
   // Fatura bilgileri
   invoiceNumber: string

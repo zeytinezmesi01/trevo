@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { getTenantContext } from '@/lib/tenant/auth'
 import { createClient } from '@/lib/supabase/server'
-import { getEInvoiceProvider } from '@/lib/einvoice'
+import { getEInvoiceProviderForTenant } from '@/lib/einvoice'
+import { decryptSecret } from '@/lib/crypto'
 
 // GET /api/invoices/[id]/einvoice/status — entegratörden güncel durumu sorgula
 export async function GET(
@@ -32,9 +33,15 @@ export async function GET(
     return NextResponse.json(doc)
   }
 
-  // Provider'dan güncel durumu sorgula
+  // Provider'dan güncel durumu sorgula — BYOK: tenant'ın kendi anahtarı
   try {
-    const provider = getEInvoiceProvider()
+    const { data: cfg } = await supabase
+      .from('tenants')
+      .select('nilvera_api_key, nilvera_test_mode')
+      .eq('id', ctx.tenantId)
+      .maybeSingle()
+    const apiKey = cfg?.nilvera_api_key ? decryptSecret(cfg.nilvera_api_key) : ''
+    const provider = getEInvoiceProviderForTenant(apiKey, cfg?.nilvera_test_mode ?? true)
     const result = await provider.getDocumentStatus(doc.integrator_doc_id)
 
     // DB'yi güncelle

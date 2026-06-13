@@ -27,17 +27,25 @@ export function getEInvoiceProvider(): EInvoiceProvider {
   if (useMock || providerName === 'mock') {
     cachedProvider = new MockEInvoiceProvider()
   } else {
-    if (!process.env.EINVOICE_API_BASE_URL) {
-      if (process.env.NODE_ENV === 'production') {
-        throw new Error('EINVOICE_API_BASE_URL must be set in production')
-      }
-    }
-    const baseUrl =
-      process.env.EINVOICE_API_BASE_URL || 'https://apitest.nilvera.com'
-    cachedProvider = new NilveraEInvoiceProvider(baseUrl, apiKey!)
+    cachedProvider = new NilveraEInvoiceProvider(apiKey!, false)
   }
 
   return cachedProvider
+}
+
+/**
+ * getEInvoiceProviderForTenant — BYOK: tenant'ın KENDİ Nilvera anahtarıyla
+ * sağlayıcı kurar. Anahtar yoksa env/mock sağlayıcıya düşer (davranış değişmez).
+ *
+ * Singleton DEĞİL — her tenant farklı anahtar kullandığından her çağrı taze
+ * sağlayıcı döndürür.
+ */
+export function getEInvoiceProviderForTenant(
+  apiKey: string | null | undefined,
+  testMode = true,
+): EInvoiceProvider {
+  if (!apiKey || apiKey.trim() === '') return getEInvoiceProvider()
+  return new NilveraEInvoiceProvider(apiKey, testMode)
 }
 
 /**
@@ -63,7 +71,7 @@ export function generateDocumentNumber(sequence: number, prefix = 'TRV'): string
 export async function determineDocumentType(
   provider: EInvoiceProvider,
   taxNumber?: string | null,
-): Promise<{ type: 'e_fatura' | 'e_arsiv'; isEInvoiceUser: boolean }> {
+): Promise<{ type: 'e_fatura' | 'e_arsiv'; isEInvoiceUser: boolean; alias?: string }> {
   if (!taxNumber || (taxNumber.length !== 10 && taxNumber.length !== 11)) {
     // Ne VKN (10) ne TCKN (11) → e-Arşiv
     return { type: 'e_arsiv', isEInvoiceUser: false }
@@ -74,6 +82,8 @@ export async function determineDocumentType(
     return {
       type: info.isEInvoiceUser ? 'e_fatura' : 'e_arsiv',
       isEInvoiceUser: info.isEInvoiceUser,
+      // e-Fatura'da alıcıya gönderim için GİB etiketi gerekir (CustomerAlias)
+      alias: info.alias,
     }
   } catch {
     // Sorgu başarısız olursa güvenli taraf: e-Arşiv

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import BrandSettingsForm from '@/components/brand-settings-form'
 import RolePermissionsMatrix from '@/components/role-permissions-matrix'
+import EInvoiceIntegratorCard from '@/components/einvoice-integrator-card'
 
 export default function AyarlarPage() {
   const [form, setForm] = useState({
@@ -22,9 +23,6 @@ export default function AyarlarPage() {
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
   const [deleting, setDeleting] = useState(false)
-  const [einvoiceEnabled, setEinvoiceEnabled] = useState(false)
-  const [provisioning, setProvisioning] = useState(false)
-  const [provisionMsg, setProvisionMsg] = useState('')
   const [userRole, setUserRole] = useState('')
   const supabase = createClient()
 
@@ -47,12 +45,6 @@ export default function AyarlarPage() {
           company_phone: data.company_phone || '',
           company_bank_iban: data.company_bank_iban || '',
         })
-      }
-      // e-Fatura durumu
-      const { data: p } = await supabase.from('profiles').select('active_tenant_id').eq('id', user.id).single()
-      if (p?.active_tenant_id) {
-        const { data: t } = await supabase.from('tenants').select('einvoice_enabled').eq('id', p.active_tenant_id).single()
-        if (t?.einvoice_enabled) setEinvoiceEnabled(true)
       }
       setLoading(false)
     }
@@ -87,34 +79,7 @@ export default function AyarlarPage() {
     setSaving(false)
   }
 
-  const handleEInvoiceProvision = async () => {
-    setProvisioning(true)
-    setProvisionMsg('')
-    try {
-      const res = await fetch('/api/tenant/einvoice/provision', { method: 'POST' })
-      const data = await res.json()
-      if (data.ok) {
-        setEinvoiceEnabled(true)
-        setProvisionMsg('e-Fatura başarıyla etkinleştirildi!')
-      } else {
-        setProvisionMsg(data.error || 'Hata')
-      }
-    } catch {
-      setProvisionMsg('Bağlantı hatası')
-    }
-    setProvisioning(false)
-    setTimeout(() => setProvisionMsg(''), 5000)
-  }
-
   if (loading) return <div className="text-center py-16 text-gray-400 text-sm">Yükleniyor...</div>
-
-  // e-Fatura için gerekli alanlar (provisioning + ilk e-belge gönderimi düşünülerek)
-  const eInvoiceRequired = [
-    { label: 'Şirket / Unvan', value: form.company_name },
-    { label: 'Vergi Numarası', value: form.company_tax_number },
-    { label: 'Vergi Dairesi', value: form.company_tax_office },
-  ]
-  const eInvoiceMissing = eInvoiceRequired.filter(f => !(f.value ?? '').trim()).map(f => f.label)
 
   return (
     <div>
@@ -260,58 +225,8 @@ export default function AyarlarPage() {
         {/* ROL YETKİLERİ — sadece owner */}
         {userRole === 'owner' && <RolePermissionsMatrix />}
 
-        {/* E-FATURA — sadece owner */}
-        {userRole === 'owner' && (
-        <div className="bg-white rounded-2xl border border-gray-100 p-6">
-          <h2 className="text-base font-semibold text-gray-900 mb-1">e-Fatura / e-Arşiv</h2>
-          <p className="text-gray-500 text-sm mb-4">Faturalarını GİB nezdinde resmi e-Belge olarak ilet.</p>
-
-          <div className="space-y-3 mb-4">
-            <div className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-xl">
-              <span className="text-sm text-gray-600">Vergi Numarası</span>
-              <span className="text-sm font-semibold text-gray-900">{form.company_tax_number || '—'}</span>
-            </div>
-            <div className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-xl">
-              <span className="text-sm text-gray-600">Vergi Dairesi</span>
-              <span className="text-sm font-semibold text-gray-900">{form.company_tax_office || '—'}</span>
-            </div>
-            <div className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-xl">
-              <span className="text-sm text-gray-600">Şirket / Unvan</span>
-              <span className="text-sm font-semibold text-gray-900">{form.company_name || '—'}</span>
-            </div>
-            <div className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-xl">
-              <span className="text-sm text-gray-600">e-Fatura Durumu</span>
-              <span className={`text-sm font-semibold ${einvoiceEnabled ? 'text-green-600' : 'text-amber-600'}`}>
-                {einvoiceEnabled ? '✓ Aktif' : '— Aktif Değil'}
-              </span>
-            </div>
-          </div>
-
-          {!einvoiceEnabled && eInvoiceMissing.length > 0 && (
-            <div className="mb-4 px-4 py-3 bg-amber-50 border border-amber-100 rounded-xl text-sm text-amber-700">
-              <strong>Eksik alanlar:</strong> {eInvoiceMissing.join(', ')}. Yukarıdaki <em>Şirket Bilgileri</em> bölümünden doldurup <strong>kaydet</strong>tikten sonra etkinleştirebilirsin.
-            </div>
-          )}
-
-          <div className="flex items-center gap-3">
-            {!einvoiceEnabled && (
-              <button
-                onClick={handleEInvoiceProvision}
-                disabled={provisioning || eInvoiceMissing.length > 0}
-                title={eInvoiceMissing.length > 0 ? 'Önce şirket bilgilerini tamamlayıp kaydedin' : undefined}
-                className="bg-purple-600 text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {provisioning ? 'Etkinleştiriliyor...' : "e-Fatura'yı Etkinleştir"}
-              </button>
-            )}
-            {provisionMsg && (
-              <span className={`text-sm ${provisionMsg.toLowerCase().includes('hata') ? 'text-red-500' : 'text-green-600'}`}>
-                {provisionMsg}
-              </span>
-            )}
-          </div>
-        </div>
-        )}
+        {/* E-FATURA ENTEGRATÖRÜ (Nilvera BYOK) — sadece owner */}
+        {userRole === 'owner' && <EInvoiceIntegratorCard companyTaxNumber={form.company_tax_number} />}
 
         {/* HESAP SİL — sadece owner */}
         {userRole === 'owner' && (
