@@ -27,6 +27,7 @@ export default function SetupChecklist() {
         return
       }
 
+      // Hızlı yol: bu cihazda kapatılmışsa profil sorgusu beklemeden gizle
       if (typeof window !== 'undefined' && localStorage.getItem(`${DISMISS_KEY}_${user.id}`)) {
         setDismissed(true)
         setLoading(false)
@@ -35,9 +36,17 @@ export default function SetupChecklist() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('company_name, company_tax_number, company_tax_office, brand_name, brand_primary_color, active_tenant_id')
+        .select('company_name, company_tax_number, company_tax_office, brand_name, brand_primary_color, active_tenant_id, checklist_dismissed_at')
         .eq('id', user.id)
         .maybeSingle()
+
+      // Kalıcı kapatma (DB) — tüm cihazlarda gizli kalır
+      if (profile?.checklist_dismissed_at) {
+        if (typeof window !== 'undefined') localStorage.setItem(`${DISMISS_KEY}_${user.id}`, '1')
+        setDismissed(true)
+        setLoading(false)
+        return
+      }
 
       let einvoiceEnabled = false
       let hasIyzico = false
@@ -102,17 +111,32 @@ export default function SetupChecklist() {
         },
       ]
 
+      // Tüm adımlar tamamsa kalıcı kapat — bir daha (hiçbir cihazda) gözükmesin
+      if (items.every(s => s.done)) {
+        await dismissPermanently(user.id)
+        setDismissed(true)
+        setLoading(false)
+        return
+      }
+
       setSteps(items)
       setLoading(false)
     })()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Kalıcı kapatma: DB'ye zaman damgası + localStorage hızlı yol cache'i
+  const dismissPermanently = async (userId: string) => {
+    await supabase
+      .from('profiles')
+      .update({ checklist_dismissed_at: new Date().toISOString() })
+      .eq('id', userId)
+    if (typeof window !== 'undefined') localStorage.setItem(`${DISMISS_KEY}_${userId}`, '1')
+  }
+
   const handleDismiss = async () => {
     const { data: { user } } = await supabase.auth.getUser()
-    if (user && typeof window !== 'undefined') {
-      localStorage.setItem(`${DISMISS_KEY}_${user.id}`, '1')
-    }
+    if (user) await dismissPermanently(user.id)
     setDismissed(true)
   }
 
@@ -121,9 +145,6 @@ export default function SetupChecklist() {
   const doneCount = steps.filter(s => s.done).length
   const totalCount = steps.length
   const percent = Math.round((doneCount / totalCount) * 100)
-
-  // Hepsi tamamsa otomatik gizle
-  if (doneCount === totalCount) return null
 
   return (
     <div
@@ -146,10 +167,11 @@ export default function SetupChecklist() {
         </div>
         <button
           onClick={handleDismiss}
+          title="Kurulum sihirbazını kalıcı olarak gizle — bir daha gösterilmez"
           className="text-xs transition-colors"
           style={{ color: '#94a3b8' }}
         >
-          Gizle
+          Bir daha gösterme
         </button>
       </div>
 
