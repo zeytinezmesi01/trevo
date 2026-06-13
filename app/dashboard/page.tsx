@@ -14,7 +14,7 @@ const shadowMd = '0 4px 16px rgba(79,125,255,0.1), 0 1px 4px rgba(0,0,0,0.06)'
 export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  const { tenantId } = await getTenantContext()
+  const { tenantId, role } = await getTenantContext()
   const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Kullanıcı'
 
   const [
@@ -175,7 +175,9 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <SetupChecklist />
+      {/* Kurulum sihirbazı yalnızca işletme sahibine — şirket/marka/e-fatura
+          ayarları owner'a ait; üye olarak katılanlar (admin/member/viewer) görmez */}
+      {role === 'owner' && <SetupChecklist />}
 
       {/* Stats Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
